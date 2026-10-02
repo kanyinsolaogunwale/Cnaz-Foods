@@ -98,19 +98,6 @@ export default async function AccountPage() {
           <p className="chip mt-4 border border-ink-200 bg-cream-50 text-ink-600">
             Signed in with Google
           </p>
-
-          <div className="mt-6 border-t border-ink-200 pt-5">
-            <SignOutButton />
-          </div>
-
-          <div className="mt-6 border-t border-ink-200 pt-5">
-            <p className="text-sm text-ink-600">
-              Want to remove your account entirely?
-            </p>
-            <div className="mt-3">
-              <DeleteAccountButton />
-            </div>
-          </div>
         </section>
 
         <div className="space-y-6">
@@ -199,6 +186,30 @@ export default async function AccountPage() {
           </section>
         </div>
       </div>
+
+      {/* Account actions — deliberately last on the page, below every main
+          flow, so signing out or deleting the account is a deliberate,
+          hard-to-hit action (owner's design direction). */}
+      <section
+        aria-label="Account actions"
+        className="card mt-8 p-5 sm:p-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="font-display text-base font-semibold text-ink-900">
+              Account actions
+            </h2>
+            <p className="mt-1 text-sm text-ink-600">
+              Signing out keeps your saved cart. Deleting your account is
+              permanent — it cannot be undone.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <SignOutButton />
+            <DeleteAccountButton />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
