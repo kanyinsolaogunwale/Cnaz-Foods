@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DeleteAccountButton } from "@/components/delete-account-button";
 import { OrderStatusChip } from "@/components/order-status-chip";
 import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -100,6 +101,15 @@ export default async function AccountPage() {
 
           <div className="mt-6 border-t border-ink-200 pt-5">
             <SignOutButton />
+          </div>
+
+          <div className="mt-6 border-t border-ink-200 pt-5">
+            <p className="text-sm text-ink-600">
+              Want to remove your account entirely?
+            </p>
+            <div className="mt-3">
+              <DeleteAccountButton />
+            </div>
           </div>
         </section>
 

@@ -54,6 +54,11 @@
     @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-accent-dark active:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-60;
   }
 
+  /* Outlined destructive trigger (mirrors .btn-secondary in accent red). */
+  .btn-danger-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-accent bg-transparent px-5 py-3 text-[15px] font-semibold text-accent-dark transition-colors hover:bg-accent hover:text-white active:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
   /* Dark-surface variant of the outlined secondary: lime accent (mirrors the
      logo on dark), fills with the primary green on hover like .btn-secondary. */
   .btn-on-dark {

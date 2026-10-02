@@ -190,6 +190,11 @@ them with the service role after re-validating and re-pricing.
   never blocks or breaks sign-in.
 - A customer can never read another customer's orders — enforced by RLS, and
   account pages use the user's own JWT.
+- **Account deletion:** the account page offers “Delete account” behind the
+  shared ConfirmDialog. `POST /api/account/delete` (service role) deletes the
+  auth user — profiles and carts cascade, while **orders are kept** with
+  `user_id` set to null so the business keeps its records. The client signs
+  out, clears the cart and redirects home afterwards.
 
 ## 10. Email rules (Resend default, Mailgun for production)
 

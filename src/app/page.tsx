@@ -12,7 +12,11 @@ const heroPoints = [
   "Groundnut seasoned with the right touch of salt",
 ];
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { "account-deleted"?: string };
+}) {
   const { products, configured } = await getFeaturedProducts(3);
 
   // The hero showcases the plantain chips when available, falling back to the
@@ -95,11 +99,20 @@ export default async function HomePage() {
 
       {/* ---------------------------------------------------- Featured products */}
       <section id="snacks" className="container-page scroll-mt-24 py-14 sm:py-20">
-        <div>
+        {searchParams["account-deleted"] ? (
+          <div
+            role="status"
+            className="mb-10 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-center text-sm font-medium text-brand-800"
+          >
+            Your account has been deleted. You&apos;re always welcome back — your snacks await! 🌱
+          </div>
+        ) : null}
+
+        <div className="text-center">
           <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl">
             Our snacks
           </h2>
-          <p className="mt-2 max-w-xl text-ink-600">
+          <p className="mx-auto mt-2 max-w-xl text-ink-600">
             Crunchy plantain chips and freshly packed nuts — made for sharing and
             everyday snacking.
           </p>
