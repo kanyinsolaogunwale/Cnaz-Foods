@@ -325,12 +325,6 @@ export function CheckoutForm() {
           </div>
         </fieldset>
 
-        <Link
-          href="/cart"
-          className="inline-block text-sm font-semibold text-brand-700 underline-offset-2 hover:underline"
-        >
-          ← Back to cart
-        </Link>
       </div>
 
       <aside className="card p-5 lg:sticky lg:top-24">
