@@ -53,6 +53,7 @@ export function Header() {
     count > 0 ? `Cart, ${count} item${count === 1 ? "" : "s"}` : "Cart";
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-ink-200/80 bg-cream-50/90 backdrop-blur">
       <div className="container-page relative z-40 flex h-16 items-center justify-between gap-3">
         <Link
@@ -149,7 +150,7 @@ export function Header() {
             onClick={() => setMenuOpen((open) => !open)}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label="Menu"
             className="grid h-10 w-10 place-items-center rounded-lg text-ink-800 hover:bg-ink-100 md:hidden"
           >
             {menuOpen ? <CloseIcon /> : <MenuIcon />}
@@ -157,10 +158,13 @@ export function Header() {
         </div>
       </div>
 
+      </header>
+
       {/*
-        Mobile menu: a full-screen takeover. It covers the whole viewport (not
-        a dropdown), so it never shifts the page underneath. Escape closes it
-        and scroll is locked while open (see the effect above).
+        Mobile menu: a full-screen takeover. It lives OUTSIDE the <header>
+        because the header's backdrop-blur would otherwise become the containing
+        block for position:fixed and clip the menu to the header's height. It
+        covers the whole viewport, locks scroll while open, and Escape closes it.
       */}
       {menuOpen && (
         <div
@@ -203,6 +207,7 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 aria-current={isActive(pathname, link.href) ? "page" : undefined}
+                onClick={() => setMenuOpen(false)}
                 className={`rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight ${
                   isActive(pathname, link.href)
                     ? "bg-brand-100 text-brand-800"
@@ -214,12 +219,14 @@ export function Header() {
             ))}
             <Link
               href={user ? "/account" : "/login"}
+              onClick={() => setMenuOpen(false)}
               className="rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight text-ink-900 hover:bg-ink-100"
             >
               {user ? "Your account" : "Sign in"}
             </Link>
             <Link
               href="/cart"
+              onClick={() => setMenuOpen(false)}
               className="flex items-center justify-between rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight text-ink-900 hover:bg-ink-100"
             >
               Cart
@@ -241,6 +248,6 @@ export function Header() {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
