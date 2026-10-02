@@ -18,7 +18,7 @@ export function SetupNotice({
         </li>
         <li>
           Run <code className="rounded bg-ink-100 px-1.5 py-0.5">supabase/schema.sql</code> in
-          the Supabase SQL editor — it creates the tables, security policies and the Cnaz
+          the Supabase SQL editor; it creates the tables, security policies and the Cnaz
           Foods products.
         </li>
         <li>Restart the dev server.</li>

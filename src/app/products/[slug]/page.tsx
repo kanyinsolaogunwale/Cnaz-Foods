@@ -65,7 +65,7 @@ export default async function ProductPage({ params }: PageProps) {
         <div className="stage relative aspect-square overflow-hidden rounded-3xl border border-ink-200/60">
           <Image
             src={product.imageUrl}
-            alt={`${product.name} — ${product.weightLabel} pack`}
+            alt={`${product.name} · ${product.weightLabel} pack`}
             fill
             priority
             sizes="(min-width: 1024px) 45vw, 100vw"
@@ -119,7 +119,7 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
 
           <p className="mt-3 text-sm leading-relaxed text-ink-600">
-            Delivery is arranged after checkout — we&apos;ll contact you to confirm the
+            Delivery is arranged after checkout. We&apos;ll contact you to confirm the
             details and any delivery fee.
           </p>
         </div>

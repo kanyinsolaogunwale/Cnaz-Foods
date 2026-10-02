@@ -20,7 +20,7 @@ export default function GlobalError({
         Something went wrong
       </h1>
       <p className="mx-auto mt-3 max-w-md leading-relaxed text-ink-600">
-        Sorry about that — the page couldn&apos;t load. You can try again, or head back to
+        Sorry about that. The page couldn&apos;t load. You can try again, or head back to
         the shop.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

@@ -40,7 +40,7 @@ export function SignOutButton() {
       <ConfirmDialog
         open={open}
         title="Sign out of your account?"
-        description="You can sign back in with Google anytime — your cart and order history will be waiting for you."
+        description="You can sign back in with Google anytime; your cart and order history will be waiting for you."
         confirmLabel={busy ? "Signing out…" : "Yes, sign out"}
         onConfirm={handleConfirm}
         onDismiss={() => {

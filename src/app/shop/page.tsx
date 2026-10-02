@@ -6,7 +6,7 @@ import { getProducts } from "@/lib/data";
 export const metadata: Metadata = {
   title: "Shop",
   description:
-    "Shop Cnaz Foods snacks — crunchy plantain chips, roasted peanuts and seasoned groundnut.",
+    "Shop Cnaz Foods snacks: crunchy plantain chips, roasted peanuts and seasoned groundnut.",
 };
 
 export default async function ShopPage() {
@@ -34,7 +34,7 @@ export default async function ShopPage() {
           <SetupNotice />
         ) : products.length === 0 ? (
           <p className="text-ink-600">
-            Our products are being added — please check back soon.
+            Our products are being added. Please check back soon.
           </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

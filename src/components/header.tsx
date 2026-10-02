@@ -60,7 +60,7 @@ export function Header() {
         <Link
           href="/"
           className="flex items-center gap-2.5 rounded-lg"
-          aria-label="Cnaz Foods — home"
+          aria-label="Cnaz Foods home"
         >
           <Image
             src="/images/logo-cn.png"

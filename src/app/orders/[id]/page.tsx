@@ -60,15 +60,15 @@ export default async function OrderPage({
         success: null,
         pending: {
           tone: "info" as const,
-          text: "Your payment is still being confirmed — this page shows the final status.",
+          text: "Your payment is still being confirmed; this page shows the final status.",
         },
         failed: {
           tone: "warn" as const,
-          text: "The payment didn't go through — your order is saved and nothing was charged. You can try again below.",
+          text: "The payment didn't go through. Your order is saved and nothing was charged; you can try again below.",
         },
         unverified: {
           tone: "warn" as const,
-          text: "We couldn't confirm your payment just now. If you were charged, don't worry — we'll verify with the payment provider and confirm by phone.",
+          text: "We couldn't confirm your payment just now. If you were charged, don't worry: we'll verify with the payment provider and confirm by phone.",
         },
         "amount-mismatch": {
           tone: "warn" as const,
@@ -80,13 +80,12 @@ export default async function OrderPage({
   const emailNote =
     order.email_status === "failed"
       ? {
-          tone: "warn" as const,
-          text: `We couldn't send the confirmation email to ${order.customer_email} — your order is still confirmed. Please keep your order number safe.`,
+          tone: "warn" as const,            text: `We couldn't send the confirmation email to ${order.customer_email}. Your order is still confirmed; please keep your order number safe.`,
         }
       : order.email_status === "skipped"
         ? {
             tone: "info" as const,
-            text: "Email confirmations are not switched on yet — your order is saved. Please keep your order number safe.",
+            text: "Email confirmations are not switched on yet. Your order is saved; please keep your order number safe.",
           }
         : null;
 
@@ -150,7 +149,7 @@ export default async function OrderPage({
             className="mt-8 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800"
           >
             <CheckCircleIcon className="h-5 w-5 shrink-0" />
-            Payment received — thank you! You&apos;ll get a receipt from Paystack by email/SMS.
+            Payment received. Thank you! You&apos;ll get a receipt from Paystack by email/SMS.
           </div>
         ) : null}
 

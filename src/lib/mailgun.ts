@@ -93,7 +93,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
     .filter(Boolean)
     .join(" · ");
 
-  const subject = `Order ${order.reference} confirmed — Cnaz Foods`;
+  const subject = `Order ${order.reference} confirmed · Cnaz Foods`;
 
   const totalRowHtml =
     order.paymentStatus === "paid"
@@ -127,7 +127,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
                 <h1 style="margin:0;font-size:20px;color:#16210F;">Order confirmed 🎉</h1>
                 <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
                   Hi ${escapeHtml(order.customerName)},<br />
-                  Thank you for your order — we've received it and we're getting your snacks ready.
+                  Thank you for your order. We've received it and we're getting your snacks ready.
                 </p>
                 <p style="margin:16px 0 0;font-size:14px;color:#3A4632;">
                   Order number: <strong style="color:#16210F;">${escapeHtml(order.reference)}</strong>
@@ -173,7 +173,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
               <td style="background:#F0F1EC;border-radius:0 0 12px 12px;padding:18px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6B7464;">
                 ${contactLines ? `${contactLines}<br />` : ""}
                 You received this email because you placed an order with Cnaz Foods.<br />
-                Cnaz Foods — Quick bite, endless delight.
+                Cnaz Foods. Quick bite, endless delight.
               </td>
             </tr>
           </table>
@@ -184,24 +184,24 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
 </html>`;
 
   const text = [
-    `CNAZ FOODS — Quick bite, endless delight.`,
+    `CNAZ FOODS. Quick bite, endless delight.`,
     ``,
     `Order confirmed`,
     ``,
     `Hi ${order.customerName},`,
-    `Thank you for your order — we've received it and we're getting your snacks ready.`,
+    `Thank you for your order. We've received it and we're getting your snacks ready.`,
     ``,
     `Order number: ${order.reference}`,
     ``,
     `Items:`,
     ...items.map(
       (item) =>
-        `- ${item.product_name}${item.product_weight ? ` (${item.product_weight})` : ""} — Qty ${item.quantity} × ${formatNaira(item.unit_price_naira)} = ${formatNaira(item.line_total_naira)}`,
+        `- ${item.product_name}${item.product_weight ? ` (${item.product_weight})` : ""}: Qty ${item.quantity} × ${formatNaira(item.unit_price_naira)} = ${formatNaira(item.line_total_naira)}`,
     ),
     ``,
     `Subtotal: ${formatNaira(order.subtotal)}`,
     `Delivery: ${order.deliveryFee > 0 ? formatNaira(order.deliveryFee) : "To be confirmed"}`,
-    order.paymentStatus === "paid" ? `Payment: Paid — thank you!` : `Payment: to be arranged with you`,
+    order.paymentStatus === "paid" ? `Payment: Paid. Thank you!` : `Payment: to be arranged with you`,
     `Total: ${formatNaira(order.total)}`,
     ``,
     `Delivery details:`,
@@ -400,13 +400,13 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
                 <h1 style="margin:0;font-size:20px;color:#16210F;">Welcome to Cnaz Foods 🎉</h1>
                 <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
                   ${greeting}<br />
-                  Your account is ready — which means your favourite Nigerian snacks are now only a few taps away.
+                  Your account is ready, which means your favourite Nigerian snacks are now only a few taps away.
                 </p>
                 <div style="margin-top:20px;background:#F6F3EA;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
                   <strong style="color:#16210F;">How ordering works</strong>
                   <ol style="margin:8px 0 0;padding-left:18px;">
                     <li>Add your favourite snacks to your cart.</li>
-                    <li>Check out — no online payment needed.</li>
+                    <li>Check out (no online payment needed).</li>
                     <li>We contact you to confirm delivery and payment.</li>
                   </ol>
                 </div>
@@ -423,7 +423,7 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
               <td style="background:#F0F1EC;border-radius:0 0 12px 12px;padding:18px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6B7464;">
                 ${contactLines ? `${contactLines}<br />` : ""}
                 You received this email because you created an account with Cnaz Foods.<br />
-                Cnaz Foods — Quick bite, endless delight.
+                Cnaz Foods. Quick bite, endless delight.
               </td>
             </tr>
           </table>
@@ -434,24 +434,24 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
 </html>`;
 
   const text = [
-    `CNAZ FOODS — Quick bite, endless delight.`,
+    `CNAZ FOODS. Quick bite, endless delight.`,
     ``,
     `Welcome to Cnaz Foods`,
     ``,
     `${firstName ? `Hi ${firstName},` : "Hi there,"}`,
-    `Your account is ready — which means your favourite Nigerian snacks are now`,
-    `only a few taps away.`,
+    `Your account is ready, which means your favourite Nigerian snacks are`,
+    `now only a few taps away.`,
     ``,
     `How ordering works:`,
     `1. Add your favourite snacks to your cart.`,
-    `2. Check out — no online payment needed.`,
+    `2. Check out (no online payment needed).`,
     `3. We contact you to confirm delivery and payment.`,
     ``,
     `Browse the shop: ${shopUrl}`,
     contactLines ? `\n${contactLines}` : "",
     ``,
     `You received this email because you created an account with Cnaz Foods.`,
-    `Cnaz Foods — Quick bite, endless delight.`,
+    `Cnaz Foods. Quick bite, endless delight.`,
   ]
     .filter((line) => line !== undefined)
     .join("\n");

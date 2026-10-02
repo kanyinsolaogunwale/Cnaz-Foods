@@ -43,7 +43,7 @@ export function OrderPaymentPanel({ orderId, paymentStatus, totalNaira, paymentE
 
       setError(
         data?.error ??
-          "We couldn't start the payment. Place the order another way — call or WhatsApp us.",
+          "We couldn't start the payment. Place the order another way: call or WhatsApp us.",
       );
       setStarting(false);
     } catch {
@@ -70,7 +70,7 @@ export function OrderPaymentPanel({ orderId, paymentStatus, totalNaira, paymentE
       {pending ? (
         <p className="mt-3 text-[15px] leading-relaxed text-ink-700">
           Your payment is still being confirmed by your bank or Paystack. This page updates
-          once it goes through — if you already completed it, there&apos;s nothing more to do.
+          once it goes through. If you already completed it, there&apos;s nothing more to do.
         </p>
       ) : paymentStatus === "failed" ? (
         <p className="mt-3 text-[15px] leading-relaxed text-ink-700">
@@ -81,7 +81,7 @@ export function OrderPaymentPanel({ orderId, paymentStatus, totalNaira, paymentE
         <p className="mt-3 text-[15px] leading-relaxed text-ink-700">
           Pay <strong className="font-semibold text-ink-900">{formatNaira(totalNaira)}</strong>{" "}
           securely with your card, bank transfer or USSD. Delivery is arranged with you
-          separately — no online charge for it.
+          separately, with no online charge for it.
         </p>
       )}
 
@@ -95,7 +95,7 @@ export function OrderPaymentPanel({ orderId, paymentStatus, totalNaira, paymentE
         {starting ? "Taking you to Paystack…" : paymentStatus === "failed" ? "Try payment again" : `Pay ${formatNaira(totalNaira)} online`}
       </button>
       <p className="mt-3 text-xs leading-relaxed text-ink-500">
-        Prefer to pay on delivery? No problem — we&apos;ll confirm everything when we call you.
+        Prefer to pay on delivery? No problem, we&apos;ll confirm everything when we call you.
       </p>
     </section>
   );

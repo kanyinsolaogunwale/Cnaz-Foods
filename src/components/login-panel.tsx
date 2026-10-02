@@ -93,7 +93,7 @@ export function LoginPanel({
       </button>
 
       <p className="mt-5 text-xs leading-relaxed text-ink-500">
-        We only use your Google name and email to manage your orders — nothing else, and
+        We only use your Google name and email to manage your orders: nothing else, and
         never anything posted on your behalf.
       </p>
 

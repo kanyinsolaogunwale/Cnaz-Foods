@@ -24,12 +24,11 @@ const sora = Sora({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: "Cnaz Foods — Quick bite, endless delight.",
+    default: "Cnaz Foods · Quick bite, endless delight.",
     template: "%s · Cnaz Foods",
   },
   description: `${site.description} Order crunchy plantain chips, roasted peanuts and seasoned groundnut online.`,
-  openGraph: {
-    title: "Cnaz Foods — Quick bite, endless delight.",
+  openGraph: {      title: "Cnaz Foods · Quick bite, endless delight.",
     description: site.description,
     url: site.url,
     siteName: "Cnaz Foods",

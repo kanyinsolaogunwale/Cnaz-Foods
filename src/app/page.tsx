@@ -20,12 +20,12 @@ export default async function HomePage({
   const { products, configured } = await getFeaturedProducts(3);
 
   // The hero showcases the plantain chips when available, falling back to the
-  // first featured product — all data comes from the database.
+  // first featured product. All data comes from the database.
   const heroProduct =
     products.find((product) => product.slug === "plantain-chips-250g") ?? products[0];
   const heroImage = heroProduct?.imageUrl ?? "/images/products/plantain-chips-250g.png";
   const heroImageAlt = heroProduct
-    ? `${heroProduct.name} — ${heroProduct.weightLabel} pack`
+    ? `${heroProduct.name} · ${heroProduct.weightLabel} pack`
     : "Cnaz Foods snack packaging";
 
   return (
@@ -47,7 +47,7 @@ export default async function HomePage({
               <span className="text-brand-300">endless delight.</span>
             </h1>
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-white/75 sm:text-base">
-              Crunchy plantain chips and freshly packed nuts from Cnaz Foods — perfect for
+              Crunchy plantain chips and freshly packed nuts from Cnaz Foods, perfect for
               everyday snacking, sharing with friends, parties, or enjoying on the go.
             </p>
 
@@ -104,7 +104,7 @@ export default async function HomePage({
             role="status"
             className="mb-10 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-center text-sm font-medium text-brand-800"
           >
-            Your account has been deleted. You&apos;re always welcome back — your snacks await! 🌱
+            Your account has been deleted. You&apos;re always welcome back; your snacks await! 🌱
           </div>
         ) : null}
 
@@ -113,7 +113,7 @@ export default async function HomePage({
             Our snacks
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-ink-600">
-            Crunchy plantain chips and freshly packed nuts — made for sharing and
+            Crunchy plantain chips and freshly packed nuts, made for sharing and
             everyday snacking.
           </p>
         </div>
@@ -123,7 +123,7 @@ export default async function HomePage({
             <SetupNotice />
           ) : products.length === 0 ? (
             <p className="text-ink-600">
-              Our products are being added — please check back soon.
+              Our products are being added. Please check back soon.
             </p>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -190,7 +190,7 @@ export default async function HomePage({
               Get in touch
             </h2>
             <p className="mt-4 text-ink-700">
-              Questions about an order or our snacks? Reach out — we&apos;re happy to help.
+              Questions about an order or our snacks? Reach out, we&apos;re happy to help.
             </p>
           </div>
           <div className="space-y-4 text-[15px]">

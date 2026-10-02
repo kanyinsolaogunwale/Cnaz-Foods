@@ -149,7 +149,7 @@ export function CheckoutForm() {
         return;
       }
 
-      // Order is saved — clear the cart and show the confirmation page,
+      // Order is saved. Clear the cart and show the confirmation page,
       // where the customer can pay online via Paystack (or wait for our call).
       setPlaced(true);
       clear();
@@ -179,7 +179,7 @@ export function CheckoutForm() {
     return (
       <div className="card mx-auto max-w-lg p-8 text-center" role="status">
         <h2 className="font-display text-xl font-semibold text-ink-900">
-          Order placed — taking you to your confirmation…
+          Order placed. Taking you to your confirmation…
         </h2>
       </div>
     );
@@ -195,7 +195,7 @@ export function CheckoutForm() {
           Your cart is empty
         </h2>
         <p className="mt-2 text-ink-600">
-          Add some snacks before checking out — it only takes a moment.
+          Add some snacks before checking out; it only takes a moment.
         </p>
         <Link href="/shop" className="btn-primary mt-6">
           Browse our snacks
@@ -384,7 +384,7 @@ export function CheckoutForm() {
         </button>
         <p className="mt-3 text-xs leading-relaxed text-ink-500">
           After you place your order you can pay securely online (card, transfer or
-          USSD) — or we&apos;ll arrange payment when we call to confirm delivery. You&apos;ll
+          USSD), or we&apos;ll arrange payment when we call to confirm delivery. You&apos;ll
           also receive a confirmation email.
         </p>
       </aside>

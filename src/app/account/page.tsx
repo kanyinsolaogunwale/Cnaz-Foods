@@ -188,7 +188,7 @@ export default async function AccountPage() {
             </h2>
             <p className="mt-1 text-sm text-ink-600">
               Signing out keeps your saved cart. Deleting your account is
-              permanent — it cannot be undone.
+              permanent; it cannot be undone.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

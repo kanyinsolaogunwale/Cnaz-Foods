@@ -126,7 +126,7 @@ export function CartView() {
           </div>
         </dl>
         <p className="mt-3 text-xs leading-relaxed text-ink-500">
-          Delivery is arranged after checkout — we&apos;ll contact you to confirm the
+          Delivery is arranged after checkout. We&apos;ll contact you to confirm the
           details and any delivery fee.
         </p>
         <Link href="/checkout" className="btn-primary mt-5 w-full">
