@@ -48,10 +48,11 @@ their explicit approval.**
 - **Supabase** — Postgres database, Row Level Security, Google OAuth
   (`@supabase/ssr` for cookie sessions, `@supabase/supabase-js` for the
   service-role client).
-- **Mailgun** — order confirmation emails, called directly over the REST API
-  with `fetch` (no SDK, no extra dependency). **Resend** is supported as a
-  fallback provider (also plain `fetch`) for environments without a Mailgun
-  sending domain; Mailgun takes priority when both are configured.
+- **Transactional email** — order confirmation emails via plain `fetch` REST
+  calls (no SDK). **Resend is the active provider** because it is free and
+  needs no custom domain. **Mailgun is fully implemented** and takes priority
+  automatically the moment its env vars are set — it becomes the provider once
+  the business has a sending domain (e.g. for production).
 - Nothing else. Do not add dependencies without a strong reason.
 
 ## 4. Project structure
@@ -176,13 +177,14 @@ them with the service role after re-validating and re-pricing.
 - A customer can never read another customer's orders — enforced by RLS, and
   account pages use the user's own JWT.
 
-## 10. Email rules (Mailgun primary, Resend fallback)
+## 10. Email rules (Resend default, Mailgun for production)
 
 - Provider keys are server-side only (`MAILGUN_*` / `RESEND_*` env vars;
   `src/lib/env.server.ts`).
-- Mailgun satisfies the HNG requirement and is used whenever it is
-  configured. Resend is only used when Mailgun is absent — it exists because
-  Mailgun needs a custom sending domain, which the business does not have yet.
+- Provider choice in `sendOrderConfirmationEmail()`: **Mailgun if configured,
+  otherwise Resend.** Resend is the day-to-day provider (free, no domain);
+  Mailgun satisfies the HNG requirement and activates as soon as the business
+  adds a sending domain — no code changes, just env vars.
 - The email is sent **after** the order + items are saved. If the provider
   fails, `orders.email_status` becomes `failed` and the confirmation page
   tells the customer to keep their order number. **The order is never

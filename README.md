@@ -21,9 +21,10 @@ Supabase, Google sign-in, and Mailgun order-confirmation emails.
   sessions, protected account pages.
 - **Account & order history** — customers see only their own orders
   (enforced by Row Level Security).
-- **Order confirmation email** — sent after the order is saved via **Mailgun**
-  (primary) with **Resend** as a no-custom-domain fallback; failures are
-  recorded on the order and surfaced on the confirmation page.
+- **Order confirmation email** — sent after the order is saved. Uses **Resend**
+  (free, no custom domain needed) out of the box, and **Mailgun** the moment
+  its keys are configured (e.g. in production); failures are recorded on the
+  order and surfaced on the confirmation page.
 
 ## Technology stack
 
@@ -57,11 +58,11 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**server only**) |
-| `MAILGUN_API_KEY` | Mailgun → Settings → API keys (primary provider) |
-| `MAILGUN_DOMAIN` | e.g. `mg.yourdomain.com` (needs a verified sending domain) |
+| `RESEND_API_KEY` | resend.com → API keys (**default email provider — set this**) |
+| `RESEND_FROM` | an email you verified on Resend (e.g. your Gmail) |
+| `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
+| `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
-| `RESEND_API_KEY` | optional fallback: resend.com → API keys |
-| `RESEND_FROM` | optional fallback: an email you verified on Resend |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; production URL in deploy |
 | `NEXT_PUBLIC_CONTACT_PHONE` | real business phone (shown on the site when set) |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | real business email (shown on the site when set) |
@@ -109,14 +110,13 @@ Never commit `.env.local` — it is git-ignored.
    (`MAILGUN_API_KEY`, `MAILGUN_DOMAIN`).
 
 The confirmation email is sent from the server (`/api/orders` →
-`src/lib/mailgun.ts`) after the order is saved. Mailgun is used when
-configured; otherwise Resend is used if available. If sending fails, the
-order is kept, `email_status` is set to `failed`, and the confirmation page
-asks the customer to keep their order number.
-
-> **No custom domain yet?** Set only the `RESEND_*` variables — Resend can
-> send to your own verified email address on its free tier, so order emails
-> work end-to-end today. Add Mailgun later when the business has a domain.
+`src/lib/mailgun.ts`) after the order is saved. **Resend is the default
+provider** (free tier, no custom domain needed — perfect for the review
+build). When the business later adds a sending domain, filling in the
+`MAILGUN_*` variables automatically switches the app to Mailgun with no code
+changes — satisfying the Mailgun deployment requirement. If sending fails,
+the order is kept, `email_status` is set to `failed`, and the confirmation
+page asks the customer to keep their order number.
 
 ## Deployment
 

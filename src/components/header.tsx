@@ -23,12 +23,14 @@ export function Header() {
   const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
-  // Escape closes the overlay menu and returns focus to the toggle button.
+  // Full-screen menu: Escape closes it, scroll locks while open, focus moves
+  // to the close button on open and back to the menu toggle on close.
   useEffect(() => {
     if (!menuOpen) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -38,7 +40,13 @@ export function Header() {
       }
     }
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [menuOpen]);
 
   const cartLabel =
@@ -150,58 +158,87 @@ export function Header() {
       </div>
 
       {/*
-        Mobile menu: an overlay, not an in-flow block — it floats above the
-        page so opening it never pushes content down. A dimmed backdrop closes
-        it on tap; Escape also closes it (see the keydown effect above).
+        Mobile menu: a full-screen takeover. It covers the whole viewport (not
+        a dropdown), so it never shifts the page underneath. Escape closes it
+        and scroll is locked while open (see the effect above).
       */}
       {menuOpen && (
-        <div id="mobile-menu" className="md:hidden">
-          <div
-            aria-hidden="true"
-            className="fixed inset-0 z-30 animate-fade-in bg-ink-950/40"
-            onClick={() => setMenuOpen(false)}
-          />
-          <nav
-            aria-label="Mobile"
-            className="absolute inset-x-0 top-full z-40 border-b border-ink-200/80 bg-cream-50 shadow-lift animate-fade-in"
-          >
-            <div className="container-page flex flex-col gap-1 py-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={isActive(pathname, link.href) ? "page" : undefined}
-                  className={`rounded-lg px-3 py-3 text-[15px] font-medium ${
-                    isActive(pathname, link.href)
-                      ? "bg-brand-100 text-brand-800"
-                      : "text-ink-700 hover:bg-ink-100"
-                  }`}
+        <div
+          id="mobile-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          className="fixed inset-0 z-50 flex flex-col bg-cream-50 animate-fade-in md:hidden"
+        >
+          <div className="container-page flex h-16 shrink-0 items-center justify-between border-b border-ink-200/80">
+            <span className="flex items-center gap-2.5">
+              <Image
+                src="/images/logo-cn.png"
+                alt=""
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-lg"
+              />
+              <span className="font-display text-lg font-semibold tracking-tight">
+                Cnaz Foods
+              </span>
+            </span>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                menuButtonRef.current?.focus();
+              }}
+              aria-label="Close menu"
+              className="grid h-10 w-10 place-items-center rounded-lg text-ink-800 hover:bg-ink-100"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+
+          <nav aria-label="Mobile" className="container-page flex flex-1 flex-col gap-1.5 pt-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActive(pathname, link.href) ? "page" : undefined}
+                className={`rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight ${
+                  isActive(pathname, link.href)
+                    ? "bg-brand-100 text-brand-800"
+                    : "text-ink-900 hover:bg-ink-100"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href={user ? "/account" : "/login"}
+              className="rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight text-ink-900 hover:bg-ink-100"
+            >
+              {user ? "Your account" : "Sign in"}
+            </Link>
+            <Link
+              href="/cart"
+              className="flex items-center justify-between rounded-xl px-4 py-4 font-display text-2xl font-semibold tracking-tight text-ink-900 hover:bg-ink-100"
+            >
+              Cart
+              {count > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="grid h-7 min-w-7 place-items-center rounded-full bg-brand-600 px-2 text-sm font-semibold text-white"
                 >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                href={user ? "/account" : "/login"}
-                className="rounded-lg px-3 py-3 text-[15px] font-medium text-ink-700 hover:bg-ink-100"
-              >
-                {user ? "Your account" : "Sign in"}
-              </Link>
-              <Link
-                href="/cart"
-                className="flex items-center justify-between rounded-lg px-3 py-3 text-[15px] font-medium text-ink-700 hover:bg-ink-100"
-              >
-                Cart
-                {count > 0 ? (
-                  <span
-                    aria-hidden="true"
-                    className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[11px] font-semibold text-white"
-                  >
-                    {count > 99 ? "99+" : count}
-                  </span>
-                ) : null}
-              </Link>
-            </div>
+                  {count > 99 ? "99+" : count}
+                </span>
+              ) : null}
+            </Link>
           </nav>
+
+          <div className="container-page pb-10 pt-6">
+            <p className="border-t border-ink-200 pt-6 font-display text-sm font-semibold text-brand-700">
+              Quick bite, endless delight.
+            </p>
+          </div>
         </div>
       )}
     </header>
