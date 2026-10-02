@@ -36,7 +36,7 @@ async function deliverWelcomeEmail(user: {
     .from("profiles")
     .update({ welcome_email_status: "sending" })
     .eq("id", user.id)
-    .in("welcome_email_status", ["pending", "failed"])
+    .in("welcome_email_status", ["pending", "failed", "skipped"])
     .select("id")
     .maybeSingle();
 

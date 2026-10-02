@@ -12,14 +12,38 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { sendWelcomeEmail } from "../src/lib/mailgun";
 
+/**
+ * tsx does not load .env.local (that is a Next.js behaviour), so we parse it
+ * ourselves BEFORE importing the mailer, which reads process.env at module
+ * load time.
+ */
 function readEnv(key: string): string {
   const match = readFileSync(join(process.cwd(), ".env.local"), "utf8").match(
     new RegExp(`^${key}=(.*)$`, "m"),
   );
   return match ? match[1].trim() : "";
 }
+
+for (const key of [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "GMAIL_USER",
+  "GMAIL_APP_PASSWORD",
+  "GMAIL_FROM",
+  "RESEND_API_KEY",
+  "RESEND_FROM",
+  "MAILGUN_API_KEY",
+  "MAILGUN_DOMAIN",
+  "MAILGUN_FROM",
+]) {
+  if (!process.env[key]) {
+    const value = readEnv(key);
+    if (value) process.env[key] = value;
+  }
+}
+
+let sendWelcomeEmail: (typeof import("../src/lib/mailgun"))["sendWelcomeEmail"];
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || readEnv("NEXT_PUBLIC_SUPABASE_URL");
 const serviceRoleKey =
@@ -35,10 +59,12 @@ const admin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 async function main() {
+  ({ sendWelcomeEmail } = await import("../src/lib/mailgun"));
+
   const { data: profiles, error } = await admin
     .from("profiles")
     .select("id, email, full_name, welcome_email_status")
-    .in("welcome_email_status", ["pending", "failed"]);
+    .in("welcome_email_status", ["pending", "failed", "skipped"]);
 
   if (error) {
     console.error("Could not load profiles:", error.message);
@@ -66,7 +92,7 @@ async function main() {
       .from("profiles")
       .update({ welcome_email_status: "sending" })
       .eq("id", profile.id)
-      .in("welcome_email_status", ["pending", "failed"])
+      .in("welcome_email_status", ["pending", "failed", "skipped"])
       .select("id")
       .maybeSingle();
 
