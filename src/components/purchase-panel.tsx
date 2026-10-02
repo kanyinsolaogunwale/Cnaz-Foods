@@ -27,7 +27,7 @@ export function PurchasePanel({ product }: { product: Product }) {
           <QuantityStepper value={quantity} onChange={setQuantity} label={product.name} />
         </div>
         <div className="pt-6">
-          <button type="button" onClick={handleAdd} className="btn-primary min-w-52">
+          <button type="button" onClick={handleAdd} className="btn-secondary min-w-52">
             Add to cart · {formatNaira(product.priceNaira * quantity)}
           </button>
         </div>

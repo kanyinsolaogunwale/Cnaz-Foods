@@ -95,22 +95,14 @@ export default async function HomePage() {
 
       {/* ---------------------------------------------------- Featured products */}
       <section id="snacks" className="container-page scroll-mt-24 py-14 sm:py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl">
-              Our snacks
-            </h2>
-            <p className="mt-2 max-w-xl text-ink-600">
-              Crunchy plantain chips and freshly packed nuts — made for sharing and
-              everyday snacking.
-            </p>
-          </div>
-          <Link
-            href="/shop"
-            className="text-sm font-semibold text-brand-700 underline-offset-2 hover:text-brand-800 hover:underline"
-          >
-            Browse the shop →
-          </Link>
+        <div>
+          <h2 className="font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-3xl">
+            Our snacks
+          </h2>
+          <p className="mt-2 max-w-xl text-ink-600">
+            Crunchy plantain chips and freshly packed nuts — made for sharing and
+            everyday snacking.
+          </p>
         </div>
 
         <div className="mt-8">
@@ -127,6 +119,12 @@ export default async function HomePage() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mt-10 flex justify-center">
+          <Link href="/shop" className="btn-primary px-7">
+            Browse the shop
+          </Link>
         </div>
       </section>
 

@@ -116,9 +116,7 @@ their explicit approval.**
   Headings are `tracking-tight`; body copy is 15–16px with relaxed leading.
 - **Reusable classes** (in `globals.css`): `.container-page`, `.btn-primary`,
   `.btn-secondary`, `.btn-on-dark`, `.input`, `.input-invalid`, `.label`,
-  `.card`, `.chip`, `.stage`.
-- Hierarchy rule: one primary action per view; secondary actions are white
-  bordered buttons or green text links. Do not add new bright colours.
+  `.card`, `.chip`, `.stage`.- Hierarchy rule: one primary action per view; secondary actions are **green-outlined buttons** (brand-600 border, brand-700 text) that **fill with the primary green and turn white on hover** — one consistent colour family across all buttons (owner's direction). On dark surfaces the outline uses the lime accent (`.btn-on-dark`) with the same fill-on-hover behaviour. `.btn-danger` stays red (destructive only). Do not add new bright colours.
 
 ## 6. UX rules
 

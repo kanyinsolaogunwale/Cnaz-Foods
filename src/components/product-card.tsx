@@ -65,7 +65,7 @@ export function ProductCard({
         <button
           type="button"
           onClick={handleAdd}
-          className="btn-primary w-full"
+          className="btn-secondary w-full"
           aria-live="polite"
         >
           {added ? "Added to cart ✓" : "Add to cart"}
