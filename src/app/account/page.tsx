@@ -37,7 +37,7 @@ export default async function AccountPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/account");
 
-  const [profileResult, recentOrdersResult, countResult, productCountResult] = await Promise.all([
+  const [profileResult, recentOrdersResult, countResult] = await Promise.all([
     supabase.from("profiles").select("full_name, email, phone").eq("id", user.id).maybeSingle(),
     supabase
       .from("orders")
@@ -47,13 +47,11 @@ export default async function AccountPage() {
       .order("created_at", { ascending: false })
       .limit(3),
     supabase.from("orders").select("id", { count: "exact", head: true }),
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
   ]);
 
   const profile = profileResult.data;
   const orders = (recentOrdersResult.data ?? []) as RecentOrder[];
   const orderCount = countResult.count ?? 0;
-  const productCount = productCountResult.count ?? 0;
 
   const displayName =
     profile?.full_name ??
@@ -77,7 +75,8 @@ export default async function AccountPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:items-start">
+      {/* Profile + quick links — one row, equal heights by grid stretch. */}
+      <div className="grid gap-4 sm:grid-cols-3">
         {/* Profile card */}
         <section className="card p-6">
           <div className="flex items-center gap-4">
@@ -100,32 +99,22 @@ export default async function AccountPage() {
           </p>
         </section>
 
-        <div className="space-y-6">
-          {/* Quick links */}
-          <section className="grid gap-4 sm:grid-cols-3">
-            <Link href="/account/orders" className="card p-5 transition-colors hover:border-brand-300">
-              <p className="text-sm text-ink-600">Orders</p>
-              <p className="mt-1 font-display text-2xl font-semibold text-ink-900">
-                {orderCount}
-              </p>
-              <p className="mt-1 text-sm font-medium text-brand-700">View order history →</p>
-            </Link>
-            <Link href="/cart" className="card p-5 transition-colors hover:border-brand-300">
-              <p className="text-sm text-ink-600">Your cart</p>
-              <p className="mt-1 font-display text-2xl font-semibold text-ink-900">🛒</p>
-              <p className="mt-1 text-sm font-medium text-brand-700">Go to cart →</p>
-            </Link>
-            <Link href="/shop" className="card p-5 transition-colors hover:border-brand-300">
-              <p className="text-sm text-ink-600">Snacks</p>
-              <p className="mt-1 font-display text-2xl font-semibold text-ink-900">
-                {productCount}
-              </p>
-              <p className="mt-1 text-sm font-medium text-brand-700">Shop again →</p>
-            </Link>
-          </section>
+        <Link href="/account/orders" className="card flex flex-col justify-center p-5 transition-colors hover:border-brand-300">
+          <p className="text-sm text-ink-600">Orders</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-ink-900">
+            {orderCount}
+          </p>
+          <p className="mt-1 text-sm font-medium text-brand-700">View order history →</p>
+        </Link>
+        <Link href="/cart" className="card flex flex-col justify-center p-5 transition-colors hover:border-brand-300">
+          <p className="text-sm text-ink-600">Your cart</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-ink-900">🛒</p>
+          <p className="mt-1 text-sm font-medium text-brand-700">Go to cart →</p>
+        </Link>
+      </div>
 
-          {/* Recent orders */}
-          <section className="card overflow-hidden">
+      {/* Recent orders — full container width. */}
+      <section className="card mt-4 overflow-hidden">
             <div className="flex items-center justify-between gap-4 border-b border-ink-200/80 px-5 py-4 sm:px-6">
               <h2 className="font-display text-lg font-semibold text-ink-900">
                 Recent orders
@@ -184,8 +173,6 @@ export default async function AccountPage() {
               </ul>
             )}
           </section>
-        </div>
-      </div>
 
       {/* Account actions — deliberately last on the page, below every main
           flow, so signing out or deleting the account is a deliberate,
