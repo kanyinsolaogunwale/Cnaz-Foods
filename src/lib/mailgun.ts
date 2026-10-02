@@ -1,7 +1,12 @@
+import nodemailer from "nodemailer";
 import type { EmailStatus } from "@/lib/types";
 import { formatNaira } from "@/lib/format";
 import { site } from "@/lib/site";
 import {
+  gmailAppPassword,
+  gmailFrom,
+  gmailUser,
+  isGmailConfigured,
   isMailgunConfigured,
   isResendConfigured,
   mailgunApiKey,
@@ -234,6 +239,32 @@ type OutgoingEmail = {
  */
 async function sendViaConfiguredProvider(email: OutgoingEmail): Promise<EmailStatus> {
   const { subject, html, text } = email;
+
+  if (isGmailConfigured) {
+    try {
+      // Gmail's SMTP accepts an app password and delivers to any recipient —
+      // the free path while the business has no sending domain.
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailAppPassword },
+        connectionTimeout: 15000,
+      });
+
+      await transporter.sendMail({
+        from: gmailFrom,
+        to: email.to,
+        subject,
+        text,
+        html,
+      });
+      return "sent";
+    } catch (error) {
+      console.error("[cnaz] Gmail SMTP send failed:", error);
+      return "failed";
+    }
+  }
 
   if (isMailgunConfigured) {
     try {

@@ -49,11 +49,12 @@ their explicit approval.**
 - **Supabase** — Postgres database, Row Level Security, Google OAuth
   (`@supabase/ssr` for cookie sessions, `@supabase/supabase-js` for the
   service-role client).
-- **Transactional email** — order confirmation + one-time welcome emails via
-  plain `fetch` REST calls (no SDK). **Resend is the active provider** because
-  it is free and needs no custom domain. **Mailgun is fully implemented** and takes priority
-  automatically the moment its env vars are set — it becomes the provider once
-  the business has a sending domain (e.g. for production).
+- **Transactional email** — order confirmation + one-time welcome emails.
+  Provider priority in `sendViaConfiguredProvider()`: **Mailgun** (needs a
+  domain — production) → **Gmail SMTP** (`nodemailer`, free, delivers to any
+  recipient via a Gmail app password — the no-domain option) → **Resend**
+  (plain fetch, test sender only reaches the Resend owner's inbox). All send
+  the same branded template; no other SDK than `nodemailer` for SMTP.
 - **Online payment** — Paystack (`src/lib/paystack.ts`, plain `fetch`, no SDK).
   The customer pays the **snack total** on Paystack's hosted page after the
   order is saved; **delivery is still confirmed by phone** (never charged
@@ -198,12 +199,13 @@ them with the service role after re-validating and re-pricing.
 
 ## 10. Email rules (Resend default, Mailgun for production)
 
-- Provider keys are server-side only (`MAILGUN_*` / `RESEND_*` env vars;
-  `src/lib/env.server.ts`).
-- Provider choice in `sendOrderConfirmationEmail()`: **Mailgun if configured,
-  otherwise Resend.** Resend is the day-to-day provider (free, no domain);
-  Mailgun satisfies the HNG requirement and activates as soon as the business
-  adds a sending domain — no code changes, just env vars.
+- Provider keys are server-side only (`MAILGUN_*` / `GMAIL_*` / `RESEND_*`
+  env vars; `src/lib/env.server.ts`).
+- Provider choice in `sendViaConfiguredProvider()`: **Mailgun if configured,
+  else Gmail SMTP, else Resend.** Gmail SMTP is the free path to reach any
+  customer inbox without a domain (Gmail app password, `nodemailer`); Mailgun
+  activates as soon as the business has a sending domain — no code changes,
+  just env vars.
 - The email is sent **after** the order + items are saved. If the provider
   fails, `orders.email_status` becomes `failed` and the confirmation page
   tells the customer to keep their order number. **The order is never
@@ -254,7 +256,8 @@ See `.env.example`. Required:
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase data + Google auth |
 | `SUPABASE_SERVICE_ROLE_KEY` | server-side order writes + order lookup (server only) |
 | `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | emails — takes priority when configured (production) |
-| `RESEND_API_KEY` / `RESEND_FROM` | default email provider — order confirmations + welcome emails |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | emails via Gmail SMTP — free, any recipient, no domain (used before Resend) |
+| `RESEND_API_KEY` / `RESEND_FROM` | email fallback — test sender reaches only the Resend owner's inbox |
 | `PAYSTACK_SECRET_KEY` | online payment (Paystack). `sk_test_…` now, `sk_live_…` later; payment UI hides when empty |
 | `NEXT_PUBLIC_SITE_URL` | auth redirects + links inside emails |
 | `NEXT_PUBLIC_CONTACT_PHONE` / `NEXT_PUBLIC_CONTACT_EMAIL` | real business contact details (optional; hidden when empty) |

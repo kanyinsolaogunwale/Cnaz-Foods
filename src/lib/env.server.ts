@@ -27,8 +27,20 @@ export const resendFrom = process.env.RESEND_FROM ?? "";
 
 export const isResendConfigured = Boolean(resendApiKey && resendFrom);
 
+// --- Gmail SMTP (free — delivers to ANY recipient, no domain needed) --------
+// Google Account → Security → 2-Step Verification → App passwords (16 chars).
+// GMAIL_USER is the Gmail address; GMAIL_FROM is optional (defaults to
+// "Cnaz Foods <GMAIL_USER>"). Takes priority over Resend.
+export const gmailUser = process.env.GMAIL_USER ?? "";
+export const gmailAppPassword = process.env.GMAIL_APP_PASSWORD ?? "";
+export const gmailFrom =
+  process.env.GMAIL_FROM || (gmailUser ? `Cnaz Foods <${gmailUser}>` : "");
+
+export const isGmailConfigured = Boolean(gmailUser && gmailAppPassword);
+
 /** True when at least one email provider can actually send. */
-export const isEmailConfigured = isMailgunConfigured || isResendConfigured;
+export const isEmailConfigured =
+  isMailgunConfigured || isGmailConfigured || isResendConfigured;
 
 // --- Paystack (online payment — optional until keys are added) --------------
 // Test mode: sk_test_… from paystack.com → Settings → API Keys & Webhooks.
