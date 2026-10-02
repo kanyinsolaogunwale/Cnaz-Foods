@@ -106,10 +106,12 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
               <td style="background:#0B0F08;border-radius:12px 12px 0 0;padding:24px 28px;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                   <tr>
-                    <td style="font-family:Arial,Helvetica,sans-serif;">
-                      <img src="${site.url}/images/logo-cn.png" width="44" height="44" alt="Cnaz Foods logo" style="border-radius:8px;display:block;" />
-                      <div style="color:#FFFFFF;font-size:18px;font-weight:bold;margin-top:10px;">Cnaz Foods</div>
-                      <div style="color:#AED876;font-size:12px;margin-top:2px;">Quick bite, endless delight.</div>
+                    <td style="width:64px;vertical-align:middle;">
+                      <img src="${site.url}/images/logo-cn.png" width="56" height="56" alt="Cnaz Foods logo" style="border-radius:12px;display:block;border:1px solid rgba(255,255,255,0.15);" />
+                    </td>
+                    <td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;padding-left:16px;">
+                      <div style="color:#FFFFFF;font-size:19px;font-weight:bold;">Cnaz Foods</div>
+                      <div style="color:#AED876;font-size:12px;margin-top:3px;">Quick bite, endless delight.</div>
                     </td>
                   </tr>
                 </table>
@@ -351,10 +353,12 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
               <td style="background:#0B0F08;border-radius:12px 12px 0 0;padding:24px 28px;">
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                   <tr>
-                    <td style="font-family:Arial,Helvetica,sans-serif;">
-                      <img src="${site.url}/images/logo-cn.png" width="44" height="44" alt="Cnaz Foods logo" style="border-radius:8px;display:block;" />
-                      <div style="color:#FFFFFF;font-size:18px;font-weight:bold;margin-top:10px;">Cnaz Foods</div>
-                      <div style="color:#AED876;font-size:12px;margin-top:2px;">Quick bite, endless delight.</div>
+                    <td style="width:64px;vertical-align:middle;">
+                      <img src="${site.url}/images/logo-cn.png" width="56" height="56" alt="Cnaz Foods logo" style="border-radius:12px;display:block;border:1px solid rgba(255,255,255,0.15);" />
+                    </td>
+                    <td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;padding-left:16px;">
+                      <div style="color:#FFFFFF;font-size:19px;font-weight:bold;">Cnaz Foods</div>
+                      <div style="color:#AED876;font-size:12px;margin-top:3px;">Quick bite, endless delight.</div>
                     </td>
                   </tr>
                 </table>

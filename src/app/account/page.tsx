@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OrderStatusChip } from "@/components/order-status-chip";
+import { UserAvatar } from "@/components/user-avatar";
 import { SignOutButton } from "@/components/sign-out-button";
 import { SetupNotice } from "@/components/setup-notice";
 import { formatDate, formatNaira } from "@/lib/format";
@@ -80,20 +80,12 @@ export default async function AccountPage() {
         {/* Profile card */}
         <section className="card p-6">
           <div className="flex items-center gap-4">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt=""
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-full border border-ink-200"
-                unoptimized
-              />
-            ) : (
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-xl font-semibold text-white">
-                {displayName.charAt(0).toUpperCase()}
-              </span>
-            )}
+            <UserAvatar
+              src={avatarUrl}
+              name={displayName}
+              className="h-14 w-14"
+              textClassName="text-xl"
+            />
             <div className="min-w-0">
               <p className="truncate font-display text-lg font-semibold text-ink-900">
                 {displayName}

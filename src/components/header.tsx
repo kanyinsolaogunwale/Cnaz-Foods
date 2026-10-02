@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useCart } from "@/context/cart-context";
 import { CartIcon, CloseIcon, MenuIcon } from "@/components/icons";
+import { UserAvatar } from "@/components/user-avatar";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -100,22 +101,12 @@ export function Header() {
               className="flex items-center gap-2 rounded-full p-1 pr-1.5 hover:bg-ink-100"
               aria-label="Your account"
             >
-              {user.user_metadata?.avatar_url ? (
-                <Image
-                  src={user.user_metadata.avatar_url}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="h-8 w-8 rounded-full border border-ink-200"
-                  unoptimized
-                />
-              ) : (
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-600 text-sm font-semibold text-white">
-                  {(user.user_metadata?.full_name ?? user.email ?? "C")
-                    .charAt(0)
-                    .toUpperCase()}
-                </span>
-              )}
+              <UserAvatar
+                src={user.user_metadata?.avatar_url ?? null}
+                name={(user.user_metadata?.full_name ?? user.email ?? "C") as string}
+                className="h-8 w-8"
+                textClassName="text-sm"
+              />
               <span className="hidden text-sm font-medium text-ink-800 lg:block">Account</span>
             </Link>
           ) : (
