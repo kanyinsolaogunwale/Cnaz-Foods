@@ -10,9 +10,10 @@ that keep it correct, and the things that are intentionally out of scope.
 
 A **real, functional online shop** for **Cnaz Foods**, built as the HNG 15
 individual task. It is not a mockup: products, carts, orders and customer
-accounts are persisted in Supabase, orders send Mailgun confirmation emails,
-and customers sign in with Google. The final product is deployed and publicly
-reviewable, and the code is pushed to GitHub.
+accounts are persisted in Supabase; orders send branded confirmation emails
+and new customers receive a one-time welcome email after their first Google
+sign-in. The final product is deployed and publicly reviewable, and the code
+is pushed to GitHub.
 
 **The owner reviews the UI personally before deployment. Never deploy without
 their explicit approval.**
@@ -48,9 +49,9 @@ their explicit approval.**
 - **Supabase** — Postgres database, Row Level Security, Google OAuth
   (`@supabase/ssr` for cookie sessions, `@supabase/supabase-js` for the
   service-role client).
-- **Transactional email** — order confirmation emails via plain `fetch` REST
-  calls (no SDK). **Resend is the active provider** because it is free and
-  needs no custom domain. **Mailgun is fully implemented** and takes priority
+- **Transactional email** — order confirmation + one-time welcome emails via
+  plain `fetch` REST calls (no SDK). **Resend is the active provider** because
+  it is free and needs no custom domain. **Mailgun is fully implemented** and takes priority
   automatically the moment its env vars are set — it becomes the provider once
   the business has a sending domain (e.g. for production).
 - Nothing else. Do not add dependencies without a strong reason.
@@ -150,7 +151,8 @@ Everything lives in `supabase/schema.sql` (single source of truth):
 
 - `products` — catalogue; add rows to add products. `is_active=false` hides a
   product everywhere. `sort_order` controls display order.
-- `profiles` — one row per auth user (trigger `handle_new_user` on signup).
+- `profiles` — one row per auth user (trigger `handle_new_user` on signup);
+  `welcome_email_status` records the one-time welcome email (server-written).
 - `carts` / `cart_items` — one cart per signed-in user, RLS-scoped to the owner.
 - `orders` — reference (`CNZ-YYMMDD-XXXX`), customer + delivery snapshot,
   `subtotal_naira`, `delivery_fee_naira`, `total_naira`, `status`
@@ -174,6 +176,13 @@ them with the service role after re-validating and re-pricing.
 - Guest carts live in localStorage; on sign-in the guest cart is **merged**
   into the Supabase cart (quantities summed, capped at 99) and local storage
   is cleared; on sign-out the in-memory cart is dropped.
+- A one-time branded **welcome email** is sent after the customer's first
+  Google sign-in (`/auth/callback` → `sendWelcomeEmail`).
+  `profiles.welcome_email_status` is the lock: the server claims rows in
+  `pending`/`failed` (→ `sending`), sends, then records the final status.
+  Returning customers are never re-welcomed, concurrent sign-ins cannot
+  double-send, failed sends retry on the next sign-in, and the whole step
+  never blocks or breaks sign-in.
 - A customer can never read another customer's orders — enforced by RLS, and
   account pages use the user's own JWT.
 
@@ -191,8 +200,12 @@ them with the service role after re-validating and re-pricing.
   re-created.**
 - If no provider is configured the email is skipped and marked `skipped`
   (visible on the confirmation page).
-- The shared branded template lives in `src/lib/mailgun.ts`
-  (`buildOrderConfirmationEmail`) — both providers send the same HTML/text.
+- A **welcome email** is sent once per customer after their first Google
+  sign-in (`sendWelcomeEmail`, same provider order, same template style,
+  status recorded on the profile row — see §9).
+- The shared branded templates live in `src/lib/mailgun.ts`
+  (`buildOrderConfirmationEmail`, `buildWelcomeEmail`) — both providers send
+  the same HTML/text.
 
 ## 11. Delivery fee (important)
 
@@ -219,8 +232,8 @@ See `.env.example`. Required:
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase data + Google auth |
 | `SUPABASE_SERVICE_ROLE_KEY` | server-side order writes + order lookup (server only) |
-| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | confirmation emails (primary provider) |
-| `RESEND_API_KEY` / `RESEND_FROM` | fallback email provider (used only if Mailgun is unset) |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | emails — takes priority when configured (production) |
+| `RESEND_API_KEY` / `RESEND_FROM` | default email provider — order confirmations + welcome emails |
 | `NEXT_PUBLIC_SITE_URL` | auth redirects + links inside emails |
 | `NEXT_PUBLIC_CONTACT_PHONE` / `NEXT_PUBLIC_CONTACT_EMAIL` | real business contact details (optional; hidden when empty) |
 
@@ -234,8 +247,9 @@ See `.env.example`. Required:
 4. Orders: row in `orders` + correct `order_items` and totals in Supabase;
    signed-in order appears in `/account/orders` and is **not** visible to a
    second Google account (RLS check).
-5. Email: send to a Mailgun sandbox authorized recipient; verify subject,
-   order number, items, quantities, prices, total and delivery details.
+5. Email: order confirmation (subject, order number, items, quantities,
+   prices, total, delivery details) and the one-time welcome email on first
+   sign-in — verify it does **not** repeat on the next sign-in.
 6. Auth: sign-in, reload (session persists), sign-out, cancelled sign-in,
    protected-route redirect.
 7. Layout at 390px and 1440px; browser console free of errors.

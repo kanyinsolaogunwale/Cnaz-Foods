@@ -174,7 +174,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
 </html>`;
 
   const text = [
-    `CNAS FOODS — Quick bite, endless delight.`,
+    `CNAZ FOODS — Quick bite, endless delight.`,
     ``,
     `Order confirmed`,
     ``,
@@ -213,20 +213,27 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
   return { subject, html, text };
 }
 
+type OutgoingEmail = {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+};
+
 /**
- * Sends the order confirmation email through Mailgun (primary) or Resend
- * (fallback). Returns "sent", "failed" (provider rejected/errored) or
- * "skipped" (no provider configured). It never throws, and it never blocks
- * order creation — the order is saved first.
+ * Sends a message through Mailgun (primary) or Resend (fallback). Returns
+ * "sent", "failed" (provider rejected/errored) or "skipped" (no provider
+ * configured). It never throws, and it never blocks the calling flow —
+ * callers record the returned status and continue.
  */
-export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<EmailStatus> {
-  const { subject, html, text } = buildOrderConfirmationEmail(data);
+async function sendViaConfiguredProvider(email: OutgoingEmail): Promise<EmailStatus> {
+  const { subject, html, text } = email;
 
   if (isMailgunConfigured) {
     try {
       const body = new URLSearchParams({
         from: mailgunFrom,
-        to: data.order.customerEmail,
+        to: email.to,
         subject,
         text,
         html,
@@ -266,7 +273,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
         },
         body: JSON.stringify({
           from: resendFrom,
-          to: [data.order.customerEmail],
+          to: [email.to],
           subject,
           html,
           text,
@@ -288,6 +295,136 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<
     }
   }
 
-  console.warn("[cnaz] No email provider is configured — skipping confirmation email.");
+  console.warn("[cnaz] No email provider is configured — skipping email.");
   return "skipped";
+}
+
+/**
+ * Sends the order confirmation email. The order is always saved first —
+ * this never blocks order creation and never re-creates an order.
+ */
+export async function sendOrderConfirmationEmail(data: OrderEmailData): Promise<EmailStatus> {
+  const { subject, html, text } = buildOrderConfirmationEmail(data);
+  return sendViaConfiguredProvider({ to: data.order.customerEmail, subject, html, text });
+}
+
+// ---------------------------------------------------------------------------
+//  Welcome email — one-time, sent after a customer's first Google sign-in.
+// ---------------------------------------------------------------------------
+
+export type WelcomeEmailData = {
+  name?: string | null;
+  email: string;
+};
+
+/** Builds the branded "your account is ready" email for new customers. */
+export function buildWelcomeEmail(data: WelcomeEmailData): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const firstName = (data.name ?? "").trim().split(/\s+/)[0] ?? "";
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
+  const shopUrl = `${site.url}/shop`;
+
+  const contactLines = [
+    site.phone ? `Phone: ${site.phone}` : "",
+    site.email ? `Email: ${site.email}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const subject = `Welcome to Cnaz Foods 🎉`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#F6F3EA;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F3EA;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+            <tr>
+              <td style="background:#0B0F08;border-radius:12px 12px 0 0;padding:24px 28px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                  <tr>
+                    <td style="font-family:Arial,Helvetica,sans-serif;">
+                      <img src="${site.url}/images/logo-cn.png" width="44" height="44" alt="Cnaz Foods logo" style="border-radius:8px;display:block;" />
+                      <div style="color:#FFFFFF;font-size:18px;font-weight:bold;margin-top:10px;">Cnaz Foods</div>
+                      <div style="color:#AED876;font-size:12px;margin-top:2px;">Quick bite, endless delight.</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#FFFFFF;padding:28px;font-family:Arial,Helvetica,sans-serif;">
+                <h1 style="margin:0;font-size:20px;color:#16210F;">Welcome to Cnaz Foods 🎉</h1>
+                <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  ${greeting}<br />
+                  Your account is ready — which means your favourite Nigerian snacks are now only a few taps away.
+                </p>
+                <div style="margin-top:20px;background:#F6F3EA;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
+                  <strong style="color:#16210F;">How ordering works</strong>
+                  <ol style="margin:8px 0 0;padding-left:18px;">
+                    <li>Add your favourite snacks to your cart.</li>
+                    <li>Check out — no online payment needed.</li>
+                    <li>We contact you to confirm delivery and payment.</li>
+                  </ol>
+                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="background:#4A811C;border-radius:10px;">
+                      <a href="${shopUrl}" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Browse the shop</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#F0F1EC;border-radius:0 0 12px 12px;padding:18px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6B7464;">
+                ${contactLines ? `${contactLines}<br />` : ""}
+                You received this email because you created an account with Cnaz Foods.<br />
+                Cnaz Foods — Quick bite, endless delight.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  const text = [
+    `CNAZ FOODS — Quick bite, endless delight.`,
+    ``,
+    `Welcome to Cnaz Foods`,
+    ``,
+    `${firstName ? `Hi ${firstName},` : "Hi there,"}`,
+    `Your account is ready — which means your favourite Nigerian snacks are now`,
+    `only a few taps away.`,
+    ``,
+    `How ordering works:`,
+    `1. Add your favourite snacks to your cart.`,
+    `2. Check out — no online payment needed.`,
+    `3. We contact you to confirm delivery and payment.`,
+    ``,
+    `Browse the shop: ${shopUrl}`,
+    contactLines ? `\n${contactLines}` : "",
+    ``,
+    `You received this email because you created an account with Cnaz Foods.`,
+    `Cnaz Foods — Quick bite, endless delight.`,
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
+
+  return { subject, html, text };
+}
+
+/**
+ * Sends the welcome email after a customer's first Google sign-in. Never
+ * throws; the caller records the returned status on the profile row.
+ */
+export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<EmailStatus> {
+  const { subject, html, text } = buildWelcomeEmail(data);
+  return sendViaConfiguredProvider({ to: data.email, subject, html, text });
 }

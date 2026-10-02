@@ -41,6 +41,12 @@ create table if not exists public.profiles (
   full_name   text,
   email       text,
   phone       text,
+  -- One-time welcome email bookkeeping (written by the server with the
+  -- service role after the customer's first Google sign-in). 'sending' is a
+  -- short-lived lock so two concurrent sign-ins cannot double-send; 'failed'
+  -- rows are retried on the next sign-in.
+  welcome_email_status text not null default 'pending'
+                       check (welcome_email_status in ('pending', 'sending', 'sent', 'failed', 'skipped')),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );

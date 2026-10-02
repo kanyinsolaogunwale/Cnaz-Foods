@@ -5,7 +5,8 @@ groundnut. _“Quick bite, endless delight.”_
 
 This repository contains the complete shop web application built for the HNG 15
 individual task: a product catalogue, cart, checkout, order persistence in
-Supabase, Google sign-in, and Mailgun order-confirmation emails.
+Supabase, Google sign-in, and branded transactional emails (order confirmation
++ a one-time welcome email) via Resend by default with Mailgun support.
 
 ## Features
 
@@ -25,6 +26,9 @@ Supabase, Google sign-in, and Mailgun order-confirmation emails.
   (free, no custom domain needed) out of the box, and **Mailgun** the moment
   its keys are configured (e.g. in production); failures are recorded on the
   order and surfaced on the confirmation page.
+- **Welcome email** — a one-time branded email after a customer's first
+  Google sign-in. Never sent twice; retried automatically if the provider
+  fails.
 
 ## Technology stack
 
@@ -59,7 +63,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**server only**) |
 | `RESEND_API_KEY` | resend.com → API keys (**default email provider — set this**) |
-| `RESEND_FROM` | an email you verified on Resend (e.g. your Gmail) |
+| `RESEND_FROM` | for testing: `onboarding@resend.dev` (delivers only to your own inbox); with a domain: e.g. `orders@cnazfoods.com` |
 | `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
 | `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
@@ -110,9 +114,12 @@ Never commit `.env.local` — it is git-ignored.
    (`MAILGUN_API_KEY`, `MAILGUN_DOMAIN`).
 
 The confirmation email is sent from the server (`/api/orders` →
-`src/lib/mailgun.ts`) after the order is saved. **Resend is the default
-provider** (free tier, no custom domain needed — perfect for the review
-build). When the business later adds a sending domain, filling in the
+`src/lib/mailgun.ts`) after the order is saved. A one-time **welcome email**
+is sent from `/auth/callback` after the customer's first Google sign-in —
+same provider order (Mailgun first, then Resend), same template style, with
+the outcome recorded in `profiles.welcome_email_status` so it never sends
+twice and retries after a failure. **Resend is the default provider** (free
+tier, no custom domain needed — perfect for the review build). When the business later adds a sending domain, filling in the
 `MAILGUN_*` variables automatically switches the app to Mailgun with no code
 changes — satisfying the Mailgun deployment requirement. If sending fails,
 the order is kept, `email_status` is set to `failed`, and the confirmation
