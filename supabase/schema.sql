@@ -93,6 +93,13 @@ create table if not exists public.orders (
                       check (status in ('received', 'confirmed', 'delivered', 'cancelled')),
   email_status        text not null default 'pending'
                       check (email_status in ('pending', 'sent', 'failed', 'skipped')),
+  -- Online payment (Paystack). The customer pays the snack total online;
+  -- delivery is still confirmed by phone. All writes happen server-side
+  -- (service role) after Paystack verify/webhook confirms the charge.
+  payment_status      text not null default 'unpaid'
+                      check (payment_status in ('unpaid', 'pending', 'paid', 'failed')),
+  payment_reference   text,
+  paid_at             timestamptz,
   created_at          timestamptz not null default now()
 );
 
@@ -108,6 +115,15 @@ create table if not exists public.order_items (
   quantity          integer not null check (quantity >= 1),
   line_total_naira  integer not null check (line_total_naira >= 0)
 );
+
+-- Upgrade path for databases created before online payment existed.
+-- (The create table above only applies to fresh databases.)
+alter table public.orders add column if not exists payment_status text not null default 'unpaid';
+alter table public.orders drop constraint if exists orders_payment_status_check;
+alter table public.orders add constraint orders_payment_status_check
+  check (payment_status in ('unpaid', 'pending', 'paid', 'failed'));
+alter table public.orders add column if not exists payment_reference text;
+alter table public.orders add column if not exists paid_at timestamptz;
 
 -- ----------------------------------------------------------------------------
 --  INDEXES

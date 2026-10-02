@@ -15,8 +15,8 @@ export default function CheckoutPage() {
           Checkout
         </h1>
         <p className="mt-3 max-w-2xl text-ink-600">
-          Tell us where to deliver your snacks. We&apos;ll confirm the delivery details
-          with you after you place the order.
+          Tell us where to deliver your snacks. You&apos;ll be able to pay securely online
+          after placing the order — or pay when we call to confirm delivery.
         </p>
       </header>
       <CheckoutForm />

@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CheckCircleIcon, MapPinIcon } from "@/components/icons";
+import { OrderPaymentPanel } from "@/components/order-payment-panel";
 import { OrderStatusChip } from "@/components/order-status-chip";
 import { SetupNotice } from "@/components/setup-notice";
 import { formatDateTime, formatNaira } from "@/lib/format";
 import { isOrderId } from "@/lib/orders";
+import { isPaymentEnabled } from "@/lib/paystack";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { OrderRow } from "@/lib/types";
@@ -17,7 +19,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function OrderPage({ params }: { params: { id: string } }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { payment?: string };
+}) {
   if (!isOrderId(params.id)) notFound();
 
   const admin = getSupabaseAdminClient();
@@ -46,6 +54,28 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
   const supabase = getSupabaseServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   const isSignedIn = Boolean(user);
+
+  const paymentBanner = searchParams.payment
+    ? ({
+        success: null,
+        pending: {
+          tone: "info" as const,
+          text: "Your payment is still being confirmed — this page shows the final status.",
+        },
+        failed: {
+          tone: "warn" as const,
+          text: "The payment didn't go through — your order is saved and nothing was charged. You can try again below.",
+        },
+        unverified: {
+          tone: "warn" as const,
+          text: "We couldn't confirm your payment just now. If you were charged, don't worry — we'll verify with the payment provider and confirm by phone.",
+        },
+        "amount-mismatch": {
+          tone: "warn" as const,
+          text: "We received a payment that doesn't match this order's total. Our team will review it and contact you.",
+        },
+      }[searchParams.payment] ?? null)
+    : null;
 
   const emailNote =
     order.email_status === "failed"
@@ -100,6 +130,36 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             {emailNote.text}
           </div>
         ) : null}
+
+        {paymentBanner ? (
+          <div
+            role="status"
+            className={`mt-8 rounded-xl px-4 py-3 text-sm font-medium ${
+              paymentBanner.tone === "warn"
+                ? "border border-accent/30 bg-accent-soft text-accent-dark"
+                : "border border-gold/40 bg-gold-soft text-ink-800"
+            }`}
+          >
+            {paymentBanner.text}
+          </div>
+        ) : null}
+
+        {order.payment_status === "paid" ? (
+          <div
+            role="status"
+            className="mt-8 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-medium text-brand-800"
+          >
+            <CheckCircleIcon className="h-5 w-5 shrink-0" />
+            Payment received — thank you! You&apos;ll get a receipt from Paystack by email/SMS.
+          </div>
+        ) : null}
+
+        <OrderPaymentPanel
+          orderId={order.id}
+          paymentStatus={order.payment_status}
+          totalNaira={order.total_naira}
+          paymentEnabled={isPaymentEnabled()}
+        />
 
         <section className="card mt-8 overflow-hidden">
           <h2 className="border-b border-ink-200/80 px-5 py-4 font-display text-lg font-semibold text-ink-900 sm:px-6">
@@ -174,7 +234,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">
                 2
               </span>
-              We contact you on {order.customer_phone} to confirm delivery and payment.
+              We contact you on {order.customer_phone} to arrange delivery.
             </li>
             <li className="flex gap-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">

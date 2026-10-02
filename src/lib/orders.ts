@@ -276,6 +276,7 @@ export async function createOrder(input: {
         subtotal,
         deliveryFee,
         total,
+        paymentStatus: "unpaid",
       },
       items: orderItems,
     });

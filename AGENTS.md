@@ -54,6 +54,11 @@ their explicit approval.**
   it is free and needs no custom domain. **Mailgun is fully implemented** and takes priority
   automatically the moment its env vars are set — it becomes the provider once
   the business has a sending domain (e.g. for production).
+- **Online payment** — Paystack (`src/lib/paystack.ts`, plain `fetch`, no SDK).
+  The customer pays the **snack total** on Paystack's hosted page after the
+  order is saved; **delivery is still confirmed by phone** (never charged
+  online until the business sets delivery pricing). Disabled until
+  `PAYSTACK_SECRET_KEY` is set; test mode uses `sk_test_…` keys.
 - Nothing else. Do not add dependencies without a strong reason.
 
 ## 4. Project structure
@@ -157,7 +162,9 @@ Everything lives in `supabase/schema.sql` (single source of truth):
 - `orders` — reference (`CNZ-YYMMDD-XXXX`), customer + delivery snapshot,
   `subtotal_naira`, `delivery_fee_naira`, `total_naira`, `status`
   (`received → confirmed → delivered | cancelled`), `email_status`
-  (`pending → sent | failed | skipped`).
+  (`pending → sent | failed | skipped`), and payment fields
+  (`payment_status` unpaid → pending → paid | failed, `payment_reference`,
+  `paid_at`) — written only by the server after Paystack verify/webhook.
 - `order_items` — snapshot of name/weight/unit price per line so history never
   changes when the catalogue changes.
 
@@ -207,13 +214,24 @@ them with the service role after re-validating and re-pricing.
   (`buildOrderConfirmationEmail`, `buildWelcomeEmail`) — both providers send
   the same HTML/text.
 
-## 11. Delivery fee (important)
+## 11. Delivery fee & payment rules (important)
 
 The business has not provided delivery pricing, so `deliveryFee = 0` in
 `createOrder()` (`src/lib/orders.ts`) and the UI/email say **“To be
 confirmed”** with a note that we contact the customer after checkout. When the
 business confirms pricing, change it in exactly one place (that constant) and
 update the copy — do not invent per-city logic.
+
+**Payment flow (Paystack):** order is saved first → the confirmation page
+offers “Pay ₦… online” → `POST /api/orders/[id]/pay` initializes a Paystack
+transaction (amount = the order's server-side total in kobo, unique reference
+per attempt) → Paystack hosted page → customer returns to
+`/api/payments/callback`, which **verifies via Paystack's API** (the browser
+is never trusted, amounts must match the order total exactly) →
+`/api/payments/webhook` (HMAC SHA-512 signature check + re-verify) covers
+missed redirects. Every step is idempotent; failed/pending states keep the
+order intact and explain themselves on the confirmation page. Payment is
+**optional** — cash-on-arrangement by phone remains valid.
 
 ## 12. Security requirements
 
@@ -234,6 +252,7 @@ See `.env.example`. Required:
 | `SUPABASE_SERVICE_ROLE_KEY` | server-side order writes + order lookup (server only) |
 | `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | emails — takes priority when configured (production) |
 | `RESEND_API_KEY` / `RESEND_FROM` | default email provider — order confirmations + welcome emails |
+| `PAYSTACK_SECRET_KEY` | online payment (Paystack). `sk_test_…` now, `sk_live_…` later; payment UI hides when empty |
 | `NEXT_PUBLIC_SITE_URL` | auth redirects + links inside emails |
 | `NEXT_PUBLIC_CONTACT_PHONE` / `NEXT_PUBLIC_CONTACT_EMAIL` | real business contact details (optional; hidden when empty) |
 
@@ -250,6 +269,9 @@ See `.env.example`. Required:
 5. Email: order confirmation (subject, order number, items, quantities,
    prices, total, delivery details) and the one-time welcome email on first
    sign-in — verify it does **not** repeat on the next sign-in.
+6. Payment (with test keys): pay flow ends on Paystack's hosted page, a test
+   card marks the order `paid` with `paid_at` set; a declined card shows the
+   honest failure state; the webhook endpoint rejects bad signatures.
 6. Auth: sign-in, reload (session persists), sign-out, cancelled sign-in,
    protected-route redirect.
 7. Layout at 390px and 1440px; browser console free of errors.
@@ -265,8 +287,7 @@ See `.env.example`. Required:
 
 ## 16. Intentionally out of scope
 
-Do not add these without the owner asking: online payment gateway (orders are
-confirmed by phone contact), admin dashboard (products are managed in the
+Do not add these without the owner asking: admin dashboard (products are managed in the
 Supabase dashboard), product search/filters (3 products), reviews/ratings,
 wishlists, newsletters, separate About/Contact pages (homepage sections cover
 them), email/password auth (Google only), discount codes, order editing UI,

@@ -26,6 +26,12 @@ Supabase, Google sign-in, and branded transactional emails (order confirmation
   (free, no custom domain needed) out of the box, and **Mailgun** the moment
   its keys are configured (e.g. in production); failures are recorded on the
   order and surfaced on the confirmation page.
+- **Online payment (Paystack)** — after checkout, the customer can pay the
+  snack total on Paystack's hosted page (card, bank transfer, USSD). The
+  server verifies every charge with Paystack's API before marking an order
+  paid; a webhook backs it up. Test mode works with `sk_test_…` keys and no
+  business registration; without keys the shop simply confirms payment by
+  phone as before.
 - **Welcome email** — a one-time branded email after a customer's first
   Google sign-in. Never sent twice; retried automatically if the provider
   fails.
@@ -67,6 +73,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
 | `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
+| `PAYSTACK_SECRET_KEY` | paystack.com → Settings → API Keys & Webhooks (`sk_test_…` for testing) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; production URL in deploy |
 | `NEXT_PUBLIC_CONTACT_PHONE` | real business phone (shown on the site when set) |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | real business email (shown on the site when set) |
@@ -124,6 +131,20 @@ tier, no custom domain needed — perfect for the review build). When the busine
 changes — satisfying the Mailgun deployment requirement. If sending fails,
 the order is kept, `email_status` is set to `failed`, and the confirmation
 page asks the customer to keep their order number.
+
+## Paystack configuration
+
+1. Create a [Paystack](https://paystack.com) account (test mode needs no
+   business registration).
+2. **Settings → API Keys & Webhooks** → copy the **Secret key** (`sk_test_…`)
+   into `.env.local` as `PAYSTACK_SECRET_KEY`.
+3. Same page → **Webhook URL**: `https://<your-domain>/api/payments/webhook`
+   (for local testing, the callback redirect already covers verification; the
+   webhook is a production safety net).
+4. Pay with Paystack's test cards (e.g. `4084 0840 8408 4081`, any future
+   expiry, any CVV, any OTP) to see the full flow.
+5. Going live later: complete your business details in Paystack, swap in the
+   `sk_live_…` key — no code changes.
 
 ## Deployment
 

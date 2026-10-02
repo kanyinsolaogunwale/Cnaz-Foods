@@ -149,7 +149,8 @@ export function CheckoutForm() {
         return;
       }
 
-      // Order is saved — clear the cart and show the confirmation page.
+      // Order is saved — clear the cart and show the confirmation page,
+      // where the customer can pay online via Paystack (or wait for our call).
       setPlaced(true);
       clear();
       router.push(`/orders/${data.order.id}`);
@@ -388,8 +389,9 @@ export function CheckoutForm() {
           {submitting ? "Placing your order…" : "Place order"}
         </button>
         <p className="mt-3 text-xs leading-relaxed text-ink-500">
-          After you place your order we&apos;ll contact you to confirm delivery and
-          payment. You&apos;ll also receive a confirmation email.
+          After you place your order you can pay securely online (card, transfer or
+          USSD) — or we&apos;ll arrange payment when we call to confirm delivery. You&apos;ll
+          also receive a confirmation email.
         </p>
       </aside>
     </form>

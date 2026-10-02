@@ -29,3 +29,10 @@ export const isResendConfigured = Boolean(resendApiKey && resendFrom);
 
 /** True when at least one email provider can actually send. */
 export const isEmailConfigured = isMailgunConfigured || isResendConfigured;
+
+// --- Paystack (online payment — optional until keys are added) --------------
+// Test mode: sk_test_… from paystack.com → Settings → API Keys & Webhooks.
+// Live mode: sk_live_… (requires completed business details in Paystack).
+export const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY ?? "";
+
+export const isPaystackConfigured = paystackSecretKey.startsWith("sk_");

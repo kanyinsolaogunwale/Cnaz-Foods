@@ -25,6 +25,7 @@ export type OrderEmailData = {
     subtotal: number;
     deliveryFee: number;
     total: number;
+    paymentStatus?: string;
   };
   items: {
     product_name: string;
@@ -89,6 +90,11 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
 
   const subject = `Order ${order.reference} confirmed — Cnaz Foods`;
 
+  const totalRowHtml =
+    order.paymentStatus === "paid"
+      ? `\n                  <tr>\n                    <td style="padding:6px 0;color:#3A4632;">Payment</td>\n                    <td align="right" style="padding:6px 0;color:#4A811C;font-weight:bold;">Paid ✓</td>\n                  </tr>\n                  <tr>\n                    <td style="padding:10px 0 0;font-weight:bold;font-size:16px;">Total paid</td>\n                    <td align="right" style="padding:10px 0 0;font-weight:bold;font-size:16px;">${formatNaira(order.total)}</td>\n                  </tr>`
+      : `\n                  <tr>\n                    <td style="padding:10px 0 0;font-weight:bold;font-size:16px;">Total</td>\n                    <td align="right" style="padding:10px 0 0;font-weight:bold;font-size:16px;">${formatNaira(order.total)}</td>\n                  </tr>`;
+
   const html = `<!DOCTYPE html>
 <html lang="en">
   <body style="margin:0;padding:0;background:#F6F3EA;">
@@ -133,10 +139,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
                       order.deliveryFee > 0 ? formatNaira(order.deliveryFee) : "To be confirmed"
                     }</td>
                   </tr>
-                  <tr>
-                    <td style="padding:10px 0 0;font-weight:bold;font-size:16px;">Total</td>
-                    <td align="right" style="padding:10px 0 0;font-weight:bold;font-size:16px;">${formatNaira(order.total)}</td>
-                  </tr>
+                  ${totalRowHtml}
                 </table>
                 <div style="margin-top:24px;background:#F6F3EA;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
                   <strong style="color:#16210F;">Delivery details</strong><br />
@@ -146,7 +149,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
                   <strong style="color:#16210F;">What happens next</strong>
                   <ol style="margin:8px 0 0;padding-left:18px;">
                     <li>We review your order.</li>
-                    <li>We contact you on ${escapeHtml(order.customerPhone)} to confirm delivery and payment.</li>
+                    <li>We contact you on ${escapeHtml(order.customerPhone)} to arrange delivery${order.paymentStatus === "paid" ? "" : " and payment"}.</li>
                     <li>Your snacks are packed and on their way.</li>
                   </ol>
                 </div>
@@ -191,6 +194,7 @@ export function buildOrderConfirmationEmail(data: OrderEmailData): {
     ``,
     `Subtotal: ${formatNaira(order.subtotal)}`,
     `Delivery: ${order.deliveryFee > 0 ? formatNaira(order.deliveryFee) : "To be confirmed"}`,
+    order.paymentStatus === "paid" ? `Payment: Paid — thank you!` : `Payment: to be arranged with you`,
     `Total: ${formatNaira(order.total)}`,
     ``,
     `Delivery details:`,

@@ -28,6 +28,7 @@ export type CartLine = {
 
 export type OrderStatus = "received" | "confirmed" | "delivered" | "cancelled";
 export type EmailStatus = "pending" | "sent" | "failed" | "skipped";
+export type PaymentStatus = "unpaid" | "pending" | "paid" | "failed";
 
 /** Row shape of `order_items`. */
 export type OrderItemRow = {
@@ -58,6 +59,9 @@ export type OrderRow = {
   total_naira: number;
   status: OrderStatus;
   email_status: EmailStatus;
+  payment_status: PaymentStatus;
+  payment_reference: string | null;
+  paid_at: string | null;
   created_at: string;
   order_items?: OrderItemRow[];
 };
