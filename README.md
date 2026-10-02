@@ -69,7 +69,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**server only**) |
 | `RESEND_API_KEY` | resend.com → API keys (**default email provider — set this**) |
-| `RESEND_FROM` | for testing: `onboarding@resend.dev` (delivers only to your own inbox); with a domain: e.g. `orders@cnazfoods.com` |
+| `RESEND_FROM` | for testing: `Cnaz Foods <onboarding@resend.dev>` (delivers only to your own inbox); with a domain: e.g. `Cnaz Foods <orders@cnazfoods.com>` |
 | `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
 | `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
