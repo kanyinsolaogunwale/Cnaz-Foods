@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { sendDeleteConfirmationEmail } from "@/lib/mailgun";
+import { createDeleteToken, DELETE_LINK_TTL_MINUTES } from "@/lib/delete-token.server";
+import { site } from "@/lib/site";
 
 export const runtime = "nodejs";
 
+// Soft in-memory cooldown so a stuck button (or a script) cannot flood an
+// inbox with deletion links. Serverless instances are short-lived, so this
+// is a dampener, not a hard guarantee.
+const COOLDOWN_MS = 60_000;
+const lastRequestAt = new Map<string, number>();
+
 /**
- * POST /api/account/delete — permanently deletes the signed-in customer's
- * account (auth user). The database foreign keys cascade the deletion to the
- * profile and saved cart; orders already placed are kept with the business
- * (their user_id is set to null) so order history survives the deletion.
- * Requires a valid session — you can only delete your own account.
+ * POST /api/account/delete — step 1 of account deletion.
+ *
+ * Does NOT delete anything. It emails the signed-in customer a secure link
+ * (`/delete-account?token=…`, valid for 60 minutes). The account is deleted
+ * only when that link is opened and confirmed, so a stray click in the app
+ * can never remove an account on its own.
  */
 export async function POST() {
   const supabase = getSupabaseServerClient();
@@ -28,14 +38,45 @@ export async function POST() {
     return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503 });
   }
 
-  const { error } = await admin.auth.admin.deleteUser(user.id);
-  if (error) {
-    console.error("[cnaz] Account deletion failed:", error.message);
+  const email = user.email ?? "";
+  if (!email) {
     return NextResponse.json(
-      { error: "We couldn't delete your account right now. Please try again." },
-      { status: 500 },
+      { error: "Your account has no email address we can send the link to." },
+      { status: 400 },
     );
   }
 
-  return NextResponse.json({ ok: true });
+  const last = lastRequestAt.get(user.id);
+  if (last && Date.now() - last < COOLDOWN_MS) {
+    return NextResponse.json(
+      { error: "A deletion link was just sent. Please check your inbox." },
+      { status: 429 },
+    );
+  }
+
+  const token = createDeleteToken(user.id);
+  const confirmUrl = `${site.url}/delete-account?token=${token}`;
+  const name =
+    typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
+
+  const status = await sendDeleteConfirmationEmail({
+    name,
+    email,
+    confirmUrl,
+    expiresInMinutes: DELETE_LINK_TTL_MINUTES,
+  });
+
+  if (status !== "sent") {
+    console.error(`[cnaz] Delete-confirmation email ${status} for ${email}`);
+    return NextResponse.json(
+      { error: "We couldn't send the confirmation email right now. Please try again in a moment." },
+      { status: 502 },
+    );
+  }
+
+  // Cooldown starts only after a successful send, so a failed send can be
+  // retried straight away.
+  lastRequestAt.set(user.id, Date.now());
+
+  return NextResponse.json({ ok: true, email, expiresInMinutes: DELETE_LINK_TTL_MINUTES });
 }

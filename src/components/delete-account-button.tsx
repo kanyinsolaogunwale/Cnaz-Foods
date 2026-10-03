@@ -1,23 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useAuth } from "@/context/auth-context";
-import { useCart } from "@/context/cart-context";
 
 /**
  * "Delete account" trigger with the shared confirmation dialog (never a
- * single click — see AGENTS.md §6). On confirmation the account is removed
- * server-side, local state is cleared, and the customer lands on the home
- * page as a signed-out guest.
+ * single click — see AGENTS.md §6). Confirming does NOT delete anything:
+ * it asks the server to email a secure deletion link, and the account is
+ * only deleted when the customer opens that link and confirms on the
+ * /delete-account page.
  */
 export function DeleteAccountButton() {
-  const { signOut } = useAuth();
-  const { clear } = useCart();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleConfirm() {
@@ -28,27 +24,40 @@ export function DeleteAccountButton() {
       const response = await fetch("/api/account/delete", { method: "POST" });
       const data = (await response.json().catch(() => null)) as {
         ok?: boolean;
+        email?: string;
         error?: string;
       } | null;
 
       if (!response.ok || !data?.ok) {
-        setError(data?.error ?? "We couldn't delete your account. Please try again.");
-        setBusy(false);
+        setError(data?.error ?? "We couldn't send the deletion link. Please try again.");
         setOpen(false);
+        setBusy(false);
         return;
       }
 
-      // Account deleted server-side — clear local state and head home.
+      // Link requested. The account stays active until the emailed link is
+      // opened and confirmed, so the customer stays signed in.
       setOpen(false);
-      clear();
-      await signOut().catch(() => undefined);
-      router.push("/?account-deleted=1");
-      router.refresh();
+      setBusy(false);
+      setSentTo(data.email ?? "your email");
     } catch {
       setError("We couldn't reach the server. Please check your connection and try again.");
-      setBusy(false);
       setOpen(false);
+      setBusy(false);
     }
+  }
+
+  if (sentTo) {
+    return (
+      <div
+        role="status"
+        className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-800"
+      >
+        <strong className="font-semibold">Check your inbox.</strong> We sent a
+        deletion link to {sentTo}. Your account is only deleted when you open
+        the link and confirm. The link expires in 60 minutes.
+      </div>
+    );
   }
 
   return (
@@ -66,8 +75,9 @@ export function DeleteAccountButton() {
       <ConfirmDialog
         open={open}
         title="Delete your account?"
-        description="This permanently removes your profile, saved cart and sign-in. Orders you already placed stay with Cnaz Foods. This cannot be undone."
-        confirmLabel={busy ? "Deleting…" : "Yes, delete my account"}
+        description="We'll email you a secure deletion link first. Nothing happens until you open that link in your email and confirm. The link expires in 60 minutes."
+        confirmLabel={busy ? "Sending…" : "Email me the link"}
+        cancelLabel="Keep my account"
         onConfirm={handleConfirm}
         onDismiss={() => {
           if (!busy) {

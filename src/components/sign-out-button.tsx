@@ -8,7 +8,9 @@ import { useAuth } from "@/context/auth-context";
 /**
  * Sign-out with a confirmation step (never a single accidental tap —
  * AGENTS.md §6). Nothing is lost by signing out: the cart and order
- * history survive for the next sign-in.
+ * history survive for the next sign-in. After confirming, the customer
+ * gets a short "you signed out" email (best effort — email trouble never
+ * blocks sign-out).
  */
 export function SignOutButton() {
   const { signOut } = useAuth();
@@ -20,6 +22,15 @@ export function SignOutButton() {
     if (busy) return;
     setBusy(true);
     setOpen(false);
+
+    // The notice needs the still-valid session to know who to email, so it
+    // happens BEFORE signOut. Failures are ignored on purpose.
+    try {
+      await fetch("/api/account/signout-notice", { method: "POST" });
+    } catch {
+      // ignore — signing out matters more than the notice
+    }
+
     await signOut();
     router.push("/");
     router.refresh();

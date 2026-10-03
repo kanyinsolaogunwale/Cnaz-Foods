@@ -5,8 +5,10 @@ groundnut. _“Quick bite, endless delight.”_
 
 This repository contains the complete shop web application built for the HNG 15
 individual task: a product catalogue, cart, checkout, order persistence in
-Supabase, Google sign-in, and branded transactional emails (order confirmation
-+ a one-time welcome email) via Resend by default with Mailgun support.
+Supabase, Google sign-in, and branded transactional emails (order
+confirmation, one-time welcome, email-confirmed account deletion and a
+sign-out notice) sent today through Gmail SMTP, with Mailgun support for a
+custom sending domain.
 
 ## Features
 
@@ -35,13 +37,18 @@ Supabase, Google sign-in, and branded transactional emails (order confirmation
 - **Welcome email** — a one-time branded email after a customer's first
   Google sign-in. Never sent twice; retried automatically if the provider
   fails.
+- **Email-confirmed account deletion** — clicking “Delete account” emails a
+  secure deletion link (valid 60 minutes). The account is deleted only when
+  the link is opened and confirmed, then a receipt email wraps up.
+- **Sign-out notice** — a short email whenever a customer signs out.
 
 ## Technology stack
 
 - [Next.js 14](https://nextjs.org) (App Router) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com)
 - [Supabase](https://supabase.com) — Postgres, Row Level Security, Google OAuth
-- [Mailgun](https://www.mailgun.com) — transactional email (REST API)
+- Transactional email — Gmail SMTP (free, any inbox) with Mailgun as the
+  production upgrade and Resend as fallback
 
 ## Run it locally
 
@@ -73,6 +80,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
 | `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | optional: free sending via Gmail SMTP to any inbox; used before Resend when set |
 | `PAYSTACK_SECRET_KEY` | paystack.com → Settings → API Keys & Webhooks (`sk_test_…` for testing) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; production URL in deploy |
 | `NEXT_PUBLIC_CONTACT_PHONE` | real business phone (shown on the site when set) |
@@ -122,15 +130,17 @@ Never commit `.env.local` — it is git-ignored.
 
 The confirmation email is sent from the server (`/api/orders` →
 `src/lib/mailgun.ts`) after the order is saved. A one-time **welcome email**
-is sent from `/auth/callback` after the customer's first Google sign-in —
-same provider order (Mailgun first, then Resend), same template style, with
-the outcome recorded in `profiles.welcome_email_status` so it never sends
-twice and retries after a failure. **Resend is the default provider** (free
-tier, no custom domain needed — perfect for the review build). When the business later adds a sending domain, filling in the
-`MAILGUN_*` variables automatically switches the app to Mailgun with no code
-changes — satisfying the Mailgun deployment requirement. If sending fails,
-the order is kept, `email_status` is set to `failed`, and the confirmation
-page asks the customer to keep their order number.
+is sent from `/auth/callback` after the customer's first Google sign-in, and
+account emails (deletion link, deletion receipt, sign-out notice) are sent
+from their API routes — all through the same provider priority:
+**Mailgun if configured, else Gmail SMTP, else Resend**. Today the shop
+sends through **Gmail SMTP** (a Gmail app password, free, delivers to any
+inbox, no domain needed). When the business later adds a sending domain,
+filling in the `MAILGUN_*` variables automatically switches to Mailgun with
+no code changes. If sending fails, the order is kept, `email_status` is set
+to `failed`, and the confirmation page asks the customer to keep their order
+number. **Only genuine business emails are ever sent** (first sign-in, real
+orders, account deletion, sign-out); tests go to the owner's inbox only.
 
 ## Paystack configuration
 
@@ -166,3 +176,7 @@ The app is designed for [Vercel](https://vercel.com):
 - Orders are created by the server, which re-validates all input and re-prices
   every line from the database — client values are never trusted.
 - Row Level Security keeps every customer's orders private to them.
+- Account deletion is confirmed by email: a signed, expiring link (HMAC of
+  the user id + expiry, key derived server-side from the service role key)
+  must be opened and confirmed before the account is deleted. The link is
+  verified on a POST, so email link scanners cannot trigger a deletion.

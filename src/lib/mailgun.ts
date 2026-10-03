@@ -467,3 +467,319 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<EmailSta
   const { subject, html, text } = buildWelcomeEmail(data);
   return sendViaConfiguredProvider({ to: data.email, subject, html, text });
 }
+
+// ---------------------------------------------------------------------------
+//  Account emails — shared branded shell for the newer account emails
+//  (deletion link, deletion receipt, sign-out notice). The order and welcome
+//  builders above keep their own long-form copy.
+// ---------------------------------------------------------------------------
+
+function accountEmailShell(options: {
+  heading: string;
+  bodyHtml: string;
+  footerReason: string;
+}): string {
+  const { heading, bodyHtml, footerReason } = options;
+
+  const contactLines = [
+    site.phone ? `Phone: ${site.phone}` : "",
+    site.email ? `Email: ${site.email}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#F6F3EA;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F3EA;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+            <tr>
+              <td style="background:#0B0F08;border-radius:12px 12px 0 0;padding:24px 28px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                  <tr>
+                    <td style="width:64px;vertical-align:middle;">
+                      <img src="${site.url}/images/logo-cn.png" width="56" height="56" alt="Cnaz Foods logo" style="border-radius:12px;display:block;border:1px solid rgba(255,255,255,0.15);" />
+                    </td>
+                    <td style="vertical-align:middle;font-family:Arial,Helvetica,sans-serif;padding-left:16px;">
+                      <div style="color:#FFFFFF;font-size:19px;font-weight:bold;">Cnaz Foods</div>
+                      <div style="color:#AED876;font-size:12px;margin-top:3px;">Quick bite, endless delight.</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#FFFFFF;padding:28px;font-family:Arial,Helvetica,sans-serif;">
+                <h1 style="margin:0;font-size:20px;color:#16210F;">${heading}</h1>
+                ${bodyHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#F0F1EC;border-radius:0 0 12px 12px;padding:18px 28px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6B7464;">
+                ${contactLines ? `${contactLines}<br />` : ""}
+                ${footerReason}<br />
+                Cnaz Foods. Quick bite, endless delight.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function firstNameGreeting(name?: string | null): { html: string; text: string } {
+  const firstName = (name ?? "").trim().split(/\s+/)[0] ?? "";
+  return {
+    html: firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,",
+    text: firstName ? `Hi ${firstName},` : "Hi there,",
+  };
+}
+
+// ---------------------------------------------------------------------------
+//  Account deletion, step 1 — the confirmation-link email. Clicking
+//  "Delete account" in the app sends THIS email; the account is only deleted
+//  when the customer opens the link and confirms.
+// ---------------------------------------------------------------------------
+
+export type DeleteConfirmationEmailData = {
+  name?: string | null;
+  email: string;
+  confirmUrl: string;
+  expiresInMinutes: number;
+};
+
+/** Builds the "open this link to delete your account" email. */
+export function buildDeleteConfirmationEmail(
+  data: DeleteConfirmationEmailData,
+): { subject: string; html: string; text: string } {
+  const greeting = firstNameGreeting(data.name);
+
+  const subject = `Confirm your account deletion · Cnaz Foods`;
+
+  const bodyHtml = `
+                <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  ${greeting.html}<br />
+                  You asked us to delete the Cnaz Foods account for <strong style="color:#16210F;">${escapeHtml(data.email)}</strong>.
+                </p>
+                <div style="margin-top:20px;background:#FDF3D3;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
+                  <strong style="color:#16210F;">What deleting means</strong>
+                  <ul style="margin:8px 0 0;padding-left:18px;">
+                    <li>Your profile, saved cart and sign-in are permanently removed.</li>
+                    <li>Orders you already placed stay with Cnaz Foods, without your personal details.</li>
+                    <li>This cannot be undone.</li>
+                  </ul>
+                </div>
+                <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  Your account is <strong style="color:#16210F;">not deleted yet</strong>. Open the button below and confirm to finish. This link expires in ${data.expiresInMinutes} minutes.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="background:#B3261E;border-radius:10px;">
+                      <a href="${data.confirmUrl}" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Delete my account</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6B7464;">
+                  If you didn't request this, ignore this email. Your account stays exactly as it is, and the link stops working on its own.
+                </p>`;
+
+  const text = [
+    `CNAZ FOODS. Quick bite, endless delight.`,
+    ``,
+    `Confirm your account deletion`,
+    ``,
+    greeting.text,
+    `You asked us to delete the Cnaz Foods account for ${data.email}.`,
+    ``,
+    `What deleting means:`,
+    `- Your profile, saved cart and sign-in are permanently removed.`,
+    `- Orders you already placed stay with Cnaz Foods, without your personal details.`,
+    `- This cannot be undone.`,
+    ``,
+    `Your account is NOT deleted yet. Open this link and confirm to finish:`,
+    data.confirmUrl,
+    ``,
+    `This link expires in ${data.expiresInMinutes} minutes.`,
+    ``,
+    `If you didn't request this, ignore this email. Your account stays exactly`,
+    `as it is, and the link stops working on its own.`,
+  ].join("\n");
+
+  const html = accountEmailShell({
+    heading: `Confirm your account deletion`,
+    bodyHtml,
+    footerReason: `You received this email because a deletion was requested for this Cnaz Foods account.`,
+  });
+
+  return { subject, html, text };
+}
+
+/** Sends the delete-confirmation link email. Never throws. */
+export async function sendDeleteConfirmationEmail(
+  data: DeleteConfirmationEmailData,
+): Promise<EmailStatus> {
+  const { subject, html, text } = buildDeleteConfirmationEmail(data);
+  return sendViaConfiguredProvider({ to: data.email, subject, html, text });
+}
+
+// ---------------------------------------------------------------------------
+//  Account deletion, step 2 — the receipt, sent after the link was confirmed
+//  and the account was deleted. The last email the address will receive.
+// ---------------------------------------------------------------------------
+
+export type AccountDeletedEmailData = {
+  name?: string | null;
+  email: string;
+};
+
+/** Builds the final "your account has been deleted" receipt email. */
+export function buildAccountDeletedEmail(
+  data: AccountDeletedEmailData,
+): { subject: string; html: string; text: string } {
+  const greeting = firstNameGreeting(data.name);
+  const shopUrl = `${site.url}/shop`;
+
+  const subject = `Your Cnaz Foods account has been deleted`;
+
+  const bodyHtml = `
+                <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  ${greeting.html}<br />
+                  Your Cnaz Foods account has been deleted, as you confirmed. This is the last email this account will receive.
+                </p>
+                <div style="margin-top:20px;background:#F6F3EA;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
+                  <strong style="color:#16210F;">What happened</strong>
+                  <ul style="margin:8px 0 0;padding-left:18px;">
+                    <li>Your profile, saved cart and sign-in were permanently removed.</li>
+                    <li>Orders you placed stay with Cnaz Foods as business records, without your personal details.</li>
+                  </ul>
+                </div>
+                <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  If you ever fancy a snack again, you're always welcome to create a new account.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="background:#4A811C;border-radius:10px;">
+                      <a href="${shopUrl}" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Back to the shop</a>
+                    </td>
+                  </tr>
+                </table>`;
+
+  const text = [
+    `CNAZ FOODS. Quick bite, endless delight.`,
+    ``,
+    `Your account has been deleted`,
+    ``,
+    greeting.text,
+    `Your Cnaz Foods account has been deleted, as you confirmed. This is the`,
+    `last email this account will receive.`,
+    ``,
+    `What happened:`,
+    `- Your profile, saved cart and sign-in were permanently removed.`,
+    `- Orders you placed stay with Cnaz Foods as business records, without your`,
+    `  personal details.`,
+    ``,
+    `If you ever fancy a snack again, you're always welcome to create a new`,
+    `account.`,
+    ``,
+    `Back to the shop: ${shopUrl}`,
+  ].join("\n");
+
+  const html = accountEmailShell({
+    heading: `Your account has been deleted`,
+    bodyHtml,
+    footerReason: `You received this email because you deleted your Cnaz Foods account.`,
+  });
+
+  return { subject, html, text };
+}
+
+/** Sends the account-deleted receipt. Never throws. */
+export async function sendAccountDeletedEmail(
+  data: AccountDeletedEmailData,
+): Promise<EmailStatus> {
+  const { subject, html, text } = buildAccountDeletedEmail(data);
+  return sendViaConfiguredProvider({ to: data.email, subject, html, text });
+}
+
+// ---------------------------------------------------------------------------
+//  Sign-out notice — a short security-style email sent when the customer
+//  signs out of their account.
+// ---------------------------------------------------------------------------
+
+export type SignedOutEmailData = {
+  name?: string | null;
+  email: string;
+  signedOutAt: Date;
+};
+
+/** Builds the "you signed out" notice email. */
+export function buildSignedOutEmail(
+  data: SignedOutEmailData,
+): { subject: string; html: string; text: string } {
+  const greeting = firstNameGreeting(data.name);
+  const signedOutAt = new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Africa/Lagos",
+  }).format(data.signedOutAt);
+  const loginUrl = `${site.url}/login`;
+
+  const subject = `You signed out · Cnaz Foods`;
+
+  const bodyHtml = `
+                <p style="margin:12px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  ${greeting.html}<br />
+                  You signed out of your Cnaz Foods account on <strong style="color:#16210F;">${escapeHtml(signedOutAt)}</strong> (West Africa Time).
+                </p>
+                <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#3A4632;">
+                  If this was you, no action is needed. Your cart and order history will be waiting the next time you sign in.
+                </p>
+                <div style="margin-top:20px;background:#FDF3D3;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#3A4632;">
+                  <strong style="color:#16210F;">If this wasn't you</strong><br />
+                  Someone may have used your account. Please secure your Google account (change its password) and contact us straight away.
+                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr>
+                    <td style="background:#4A811C;border-radius:10px;">
+                      <a href="${loginUrl}" style="display:inline-block;padding:12px 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#FFFFFF;text-decoration:none;">Sign back in</a>
+                    </td>
+                  </tr>
+                </table>`;
+
+  const text = [
+    `CNAZ FOODS. Quick bite, endless delight.`,
+    ``,
+    `You signed out`,
+    ``,
+    greeting.text,
+    `You signed out of your Cnaz Foods account on ${signedOutAt} (West`,
+    `Africa Time).`,
+    ``,
+    `If this was you, no action is needed. Your cart and order history will be`,
+    `waiting the next time you sign in.`,
+    ``,
+    `If this wasn't you:`,
+    `Someone may have used your account. Please secure your Google account`,
+    `(change its password) and contact us straight away.`,
+    ``,
+    `Sign back in: ${loginUrl}`,
+  ].join("\n");
+
+  const html = accountEmailShell({
+    heading: `You signed out`,
+    bodyHtml,
+    footerReason: `You received this email because you signed out of your Cnaz Foods account.`,
+  });
+
+  return { subject, html, text };
+}
+
+/** Sends the sign-out notice. Never throws. */
+export async function sendSignedOutEmail(data: SignedOutEmailData): Promise<EmailStatus> {
+  const { subject, html, text } = buildSignedOutEmail(data);
+  return sendViaConfiguredProvider({ to: data.email, subject, html, text });
+}

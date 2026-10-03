@@ -49,7 +49,8 @@ their explicit approval.**
 - **Supabase** — Postgres database, Row Level Security, Google OAuth
   (`@supabase/ssr` for cookie sessions, `@supabase/supabase-js` for the
   service-role client).
-- **Transactional email** — order confirmation + one-time welcome emails.
+- **Transactional email** — order confirmation, one-time welcome email,
+  email-confirmed account deletion (link + receipt) and a sign-out notice.
   Provider priority in `sendViaConfiguredProvider()`: **Mailgun** (needs a
   domain — production) → **Gmail SMTP** (`nodemailer`, free, delivers to any
   recipient via a Gmail app password — the no-domain option) → **Resend**
@@ -85,12 +86,16 @@ their explicit approval.**
     │   ├── account/orders/        # order history (protected)
     │   ├── auth/callback/route.ts # Google OAuth code exchange
     │   ├── api/orders/route.ts    # POST order creation (server-side)
+    │   ├── api/account/delete/    # deletion: request link (POST) + confirm (POST)
+    │   ├── api/account/signout-notice/route.ts # "you signed out" email
+    │   ├── delete-account/        # emailed deletion-link confirm page
     │   └── layout.tsx, globals.css, error.tsx, not-found.tsx
     ├── components/                # header, footer, product card, forms, etc.
     ├── context/                   # auth-context, cart-context (client state)
     └── lib/
         ├── env.ts                 # NEXT_PUBLIC_* values (safe for browser)
         ├── env.server.ts          # service-role + Mailgun keys (SERVER ONLY)
+        ├── delete-token.server.ts # signed deletion-link tokens (SERVER ONLY)
         ├── supabase/              # client.ts (browser), server.ts (cookies), admin.ts (service role)
         ├── data.ts                # public product queries
         ├── orders.ts              # order validation + creation (server)
@@ -191,11 +196,17 @@ them with the service role after re-validating and re-pricing.
   never blocks or breaks sign-in.
 - A customer can never read another customer's orders — enforced by RLS, and
   account pages use the user's own JWT.
-- **Account deletion:** the account page offers “Delete account” behind the
-  shared ConfirmDialog. `POST /api/account/delete` (service role) deletes the
-  auth user — profiles and carts cascade, while **orders are kept** with
-  `user_id` set to null so the business keeps its records. The client signs
-  out, clears the cart and redirects home afterwards.
+- **Account deletion (email-confirmed):** clicking “Delete account” never
+  deletes anything directly. Confirming the dialog calls
+  `POST /api/account/delete`, which emails a signed deletion link
+  (`/delete-account?token=…`). The token is a 60-minute HMAC
+  (`src/lib/delete-token.server.ts`, key derived from the service role key —
+  no schema changes; in-memory 1-link-per-minute cooldown). The account is
+  deleted ONLY when the customer opens the link and confirms: the
+  `/delete-account` page POSTs the token to `/api/account/delete/confirm`
+  (a POST, so email link scanners cannot trigger it), which deletes the auth
+  user with the service role — profiles and carts cascade, **orders are
+  kept** (`user_id` set to null by the FK) — then emails a final receipt.
 
 ## 10. Email rules (Resend default, Mailgun for production)
 
@@ -215,9 +226,23 @@ them with the service role after re-validating and re-pricing.
 - A **welcome email** is sent once per customer after their first Google
   sign-in (`sendWelcomeEmail`, same provider order, same template style,
   status recorded on the profile row — see §9).
+- **Deletion emails:** confirming “Delete account” sends a
+  delete-confirmation LINK email (see §9); after the link is confirmed, a
+  final receipt is sent. Same provider order, same template style.
+- **Sign-out notice:** `POST /api/account/signout-notice` (called by the
+  sign-out dialog before the session clears) emails a short “you signed
+  out” note. Failures never block sign-out.
+- **Strict sending policy (owner mandate):** emails go out ONLY for genuine
+  business events: a first sign-in, a real order, a deletion-link request, a
+  completed deletion, and sign-out. NEVER send test/status emails to any
+  customer or partner address. Manual tests go only to the owner's own
+  inbox (use Gmail plus-addressing like `ogunwalekanyinsola+test@gmail.com`).
+  A phantom email to a real customer is a serious incident — it happened
+  once with a fake order confirmation. Never again.
 - The shared branded templates live in `src/lib/mailgun.ts`
-  (`buildOrderConfirmationEmail`, `buildWelcomeEmail`) — both providers send
-  the same HTML/text.
+  (`buildOrderConfirmationEmail`, `buildWelcomeEmail`,
+  `buildDeleteConfirmationEmail`, `buildAccountDeletedEmail`,
+  `buildSignedOutEmail`) — all providers send the same HTML/text.
 
 ## 11. Delivery fee & payment rules (important)
 
@@ -275,13 +300,18 @@ See `.env.example`. Required:
 5. Email: order confirmation (subject, order number, items, quantities,
    prices, total, delivery details) and the one-time welcome email on first
    sign-in — verify it does **not** repeat on the next sign-in.
-6. Payment (with test keys): pay flow ends on Paystack's hosted page, a test
+6. Deletion flow: “Delete account” emails a link (no deletion yet) →
+   opening the link shows the confirm page → confirming deletes the account
+   and sends a receipt; ignoring the link leaves the account active;
+   expired/used/invalid links show a friendly error. Signing out sends the
+   signed-out notice. Test ONLY to the owner's own inbox (§10).
+7. Payment (with test keys): pay flow ends on Paystack's hosted page, a test
    card marks the order `paid` with `paid_at` set; a declined card shows the
    honest failure state; the webhook endpoint rejects bad signatures.
-6. Auth: sign-in, reload (session persists), sign-out, cancelled sign-in,
+8. Auth: sign-in, reload (session persists), sign-out, cancelled sign-in,
    protected-route redirect.
-7. Layout at 390px and 1440px; browser console free of errors.
-8. Confirm no secrets appear in the client bundle.
+9. Layout at 390px and 1440px; browser console free of errors.
+10. Confirm no secrets appear in the client bundle.
 
 ## 15. Deployment
 
