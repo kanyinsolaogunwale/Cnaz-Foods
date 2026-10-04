@@ -130,11 +130,13 @@ their explicit approval.**
 - Mobile is a first-class target: 2-up product grid ≥ 380px, ≥ 44px tap
   targets, sticky-free simple layouts, summary blocks below content.
 - Responsive rules: the footer shows Shop/Account/Contact on ONE row beside the
-  brand block from tablet up (the `md:` grid); the header carries a search row
-  below the main bar below `lg:` and an inline search field at `lg:`+; shop
-  filters sit in an inline bar at `lg:`+ and in a bottom sheet below that
-  (`ShopFilters`). After layout changes, verify 390 / 768 / 1280+ have no
-  horizontal scroll (rows with fixed-width children must be allowed to wrap).
+  brand block from tablet up (equal `md:grid-cols-4` columns so the gaps stay
+  even); the shop page holds the catalogue search and the Filters toggle
+  (icon-only below `lg:`, icon + text at `lg:`+) — a bottom sheet below `lg:`
+  and an anchored overlay dropdown at `lg:`+ (`ShopFilters`). Search lives on
+  the shop page only, not in the header or the homepage. After layout
+  changes, verify 390 / 768 / 1280+ have no horizontal scroll (rows with
+  fixed-width children must be allowed to wrap).
 - Show **only** information that exists (e.g. ingredients only when provided).
 - Forms: labels on every field, inline errors tied with `aria-describedby`,
   `role="alert"` for submit errors, first invalid field focused on submit.

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useCart } from "@/context/cart-context";
-import { CartIcon, CloseIcon, MenuIcon, SearchIcon } from "@/components/icons";
+import { CartIcon, CloseIcon, MenuIcon } from "@/components/icons";
 import { UserAvatar } from "@/components/user-avatar";
 
 const navLinks = [
@@ -92,27 +92,6 @@ export function Header() {
           ))}
         </nav>
 
-        {/* Search, inline on large screens (a second header row carries it on
-            mobile and tablet — see below). Submits to the shop page. */}
-        <form
-          action="/shop"
-          role="search"
-          aria-label="Search products"
-          className="hidden min-w-0 flex-1 justify-center px-2 lg:flex"
-        >
-          <div className="relative w-full max-w-xs">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
-            <input
-              type="search"
-              name="q"
-              placeholder="Search snacks…"
-              autoComplete="off"
-              aria-label="Search products"
-              className="input py-2 pl-9 pr-3 text-sm"
-            />
-          </div>
-        </form>
-
         <div className="flex items-center gap-1 sm:gap-1.5">
           {loading ? (
             <span aria-hidden="true" className="h-9 w-9 animate-pulse rounded-full bg-ink-100" />
@@ -169,29 +148,6 @@ export function Header() {
           </button>
         </div>
       </div>
-
-      {/* Search for mobile and tablet: its own always-visible header row so
-          nothing in the main row gets cramped or misaligned. */}
-      <form
-        action="/shop"
-        role="search"
-        aria-label="Search products"
-        className="border-t border-ink-200/60 lg:hidden"
-      >
-        <div className="container-page py-2.5">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
-            <input
-              type="search"
-              name="q"
-              placeholder="Search snacks…"
-              autoComplete="off"
-              aria-label="Search products"
-              className="input py-2.5 pl-10 pr-3 text-[15px]"
-            />
-          </div>
-        </div>
-      </form>
 
       </header>
 

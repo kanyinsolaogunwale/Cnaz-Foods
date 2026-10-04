@@ -7,19 +7,18 @@ This repository contains the complete shop web application built for the HNG 15
 individual task: a product catalogue, cart, checkout, order persistence in
 Supabase, Google sign-in, and branded transactional emails (order
 confirmation, one-time welcome, email-confirmed account deletion and a
-sign-out notice) sent today through Gmail SMTP, with Mailgun support for a
-custom sending domain.
+sign-out notice) sent today through Gmail SMTP.
 
 ## Features
 
 - **Home, Shop, Product details** — product data is served from the Supabase
   `products` table (never hardcoded), so new products appear automatically.
-- **Search, filters & sorting** — the shop page (and the header/home search
-  fields) query real database data: free-text search, snack-type filter
-  (derived from actual product names, so only types that exist are offered),
-  price range, and low-to-high / high-to-low price sorting. Filters live in
-  the URL, so filtered views can be shared. On phones and tablets the filters
-  open in a bottom sheet; on desktop they sit in an inline bar.
+- **Search, filters & sorting** — the shop page queries real database data:
+  free-text search, snack-type filter (derived from actual product names, so
+  only types that exist are offered), price range, and low-to-high /
+  high-to-low price sorting. Filters live in the URL, so filtered views can
+  be shared. On phones and tablets the filters open in a bottom sheet; on
+  desktop they open in a dropdown panel beside the search field.
 - **Public catalogue API** — `GET /api/products` exposes the same catalogue
   (same params: `q`, `sort`, `type`, `min`, `max`; returns
   `{ products, count, types }`) so the upcoming mobile app can reuse the
@@ -34,9 +33,8 @@ custom sending domain.
   sessions, protected account pages.
 - **Account & order history** — customers see only their own orders
   (enforced by Row Level Security).
-- **Order confirmation email** — sent after the order is saved. Uses **Resend**
-  (free, no custom domain needed) out of the box, and **Mailgun** the moment
-  its keys are configured (e.g. in production); failures are recorded on the
+- **Order confirmation email** — sent after the order is saved through
+  **Gmail SMTP** (free, delivers to any inbox); failures are recorded on the
   order and surfaced on the confirmation page.
 - **Online payment (Paystack)** — after checkout, the customer can pay the
   snack total on Paystack's hosted page (card, bank transfer, USSD). The
@@ -57,8 +55,8 @@ custom sending domain.
 - [Next.js 14](https://nextjs.org) (App Router) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com)
 - [Supabase](https://supabase.com) — Postgres, Row Level Security, Google OAuth
-- Transactional email — Gmail SMTP (free, any inbox) with Mailgun as the
-  production upgrade and Resend as fallback
+- Transactional email — Gmail SMTP (free, any inbox), with Mailgun support
+  ready for a custom sending domain
 
 ## Run it locally
 
@@ -85,12 +83,11 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**server only**) |
-| `RESEND_API_KEY` | resend.com → API keys (**default email provider — set this**) |
-| `RESEND_FROM` | for testing: `Cnaz Foods <onboarding@resend.dev>` (delivers only to your own inbox); with a domain: e.g. `Cnaz Foods <orders@cnazfoods.com>` |
-| `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a domain |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | Gmail SMTP sending (**the active provider**): a Gmail app password from myaccount.google.com → Security |
+| `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a sending domain (planned production upgrade) |
 | `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
 | `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
-| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | optional: free sending via Gmail SMTP to any inbox; used before Resend when set |
+| `RESEND_API_KEY` / `RESEND_FROM` | optional last-resort fallback kept in the code; not needed while Gmail SMTP is configured |
 | `PAYSTACK_SECRET_KEY` | paystack.com → Settings → API Keys & Webhooks (`sk_test_…` for testing) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; production URL in deploy |
 | `NEXT_PUBLIC_CONTACT_PHONE` | real business phone (shown on the site when set) |
@@ -143,14 +140,14 @@ The confirmation email is sent from the server (`/api/orders` →
 is sent from `/auth/callback` after the customer's first Google sign-in, and
 account emails (deletion link, deletion receipt, sign-out notice) are sent
 from their API routes — all through the same provider priority:
-**Mailgun if configured, else Gmail SMTP, else Resend**. Today the shop
-sends through **Gmail SMTP** (a Gmail app password, free, delivers to any
-inbox, no domain needed). When the business later adds a sending domain,
-filling in the `MAILGUN_*` variables automatically switches to Mailgun with
-no code changes. If sending fails, the order is kept, `email_status` is set
-to `failed`, and the confirmation page asks the customer to keep their order
-number. **Only genuine business emails are ever sent** (first sign-in, real
-orders, account deletion, sign-out); tests go to the owner's inbox only.
+**Gmail SMTP (active today), then Mailgun, then Resend**. Gmail SMTP uses a
+Gmail app password: free, delivers to any inbox, no domain needed. When the
+business later adds a sending domain, filling in the `MAILGUN_*` variables
+automatically switches to Mailgun with no code changes. If sending fails,
+the order is kept, `email_status` is set to `failed`, and the confirmation
+page asks the customer to keep their order number. **Only genuine business
+emails are ever sent** (first sign-in, real orders, account deletion,
+sign-out); tests go to the owner's inbox only.
 
 ## Paystack configuration
 

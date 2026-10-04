@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MailIcon, PhoneIcon, SearchIcon } from "@/components/icons";
+import { MailIcon, PhoneIcon } from "@/components/icons";
 import { ProductCard } from "@/components/product-card";
 import { SetupNotice } from "@/components/setup-notice";
 import { getFeaturedProducts } from "@/lib/data";
@@ -117,29 +117,6 @@ export default async function HomePage({
             everyday snacking.
           </p>
 
-          {/* Search entry: submits the real catalogue query to the shop page. */}
-          <form
-            action="/shop"
-            method="get"
-            role="search"
-            aria-label="Search snacks"
-            className="mx-auto mt-6 flex w-full max-w-md items-center gap-2"
-          >
-            <div className="relative min-w-0 flex-1">
-              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
-              <input
-                type="search"
-                name="q"
-                placeholder="Search snacks…"
-                autoComplete="off"
-                aria-label="Search snacks"
-                className="input w-full py-2.5 pl-10 pr-3 text-[15px]"
-              />
-            </div>
-            <button type="submit" className="btn-primary shrink-0 px-4 py-2.5 text-[15px]">
-              Search
-            </button>
-          </form>
         </div>
 
         <div className="mt-8">
