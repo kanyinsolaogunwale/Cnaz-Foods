@@ -76,7 +76,7 @@ their explicit approval.**
     ├── middleware.ts              # session refresh + /account protection
     ├── app/
     │   ├── page.tsx               # home (hero, featured, about, contact sections)
-    │   ├── shop/                  # catalogue
+    │   ├── shop/                  # catalogue (search, snack-type + price filters, sort)
     │   ├── products/[slug]/       # product details
     │   ├── cart/                  # cart
     │   ├── checkout/              # checkout
@@ -86,6 +86,7 @@ their explicit approval.**
     │   ├── account/orders/        # order history (protected)
     │   ├── auth/callback/route.ts # Google OAuth code exchange
     │   ├── api/orders/route.ts    # POST order creation (server-side)
+    │   ├── api/products/route.ts  # public GET catalogue (search/filter/sort; shared with the mobile app)
     │   ├── api/account/delete/    # deletion: request link (POST) + confirm (POST)
     │   ├── api/account/signout-notice/route.ts # "you signed out" email
     │   ├── delete-account/        # emailed deletion-link confirm page
@@ -97,7 +98,7 @@ their explicit approval.**
         ├── env.server.ts          # service-role + Mailgun keys (SERVER ONLY)
         ├── delete-token.server.ts # signed deletion-link tokens (SERVER ONLY)
         ├── supabase/              # client.ts (browser), server.ts (cookies), admin.ts (service role)
-        ├── data.ts                # public product queries
+        ├── data.ts                # product queries + catalogue search/filters/sort (getCatalog)
         ├── orders.ts              # order validation + creation (server)
         ├── mailgun.ts             # email builder + sender (server)
         ├── site.ts                # business name/tagline/env contact details
@@ -128,6 +129,12 @@ their explicit approval.**
 
 - Mobile is a first-class target: 2-up product grid ≥ 380px, ≥ 44px tap
   targets, sticky-free simple layouts, summary blocks below content.
+- Responsive rules: the footer shows Shop/Account/Contact on ONE row beside the
+  brand block from tablet up (the `md:` grid); the header carries a search row
+  below the main bar below `lg:` and an inline search field at `lg:`+; shop
+  filters sit in an inline bar at `lg:`+ and in a bottom sheet below that
+  (`ShopFilters`). After layout changes, verify 390 / 768 / 1280+ have no
+  horizontal scroll (rows with fixed-width children must be allowed to wrap).
 - Show **only** information that exists (e.g. ingredients only when provided).
 - Forms: labels on every field, inline errors tied with `aria-describedby`,
   `role="alert"` for submit errors, first invalid field focused on submit.
@@ -159,7 +166,11 @@ their explicit approval.**
 Everything lives in `supabase/schema.sql` (single source of truth):
 
 - `products` — catalogue; add rows to add products. `is_active=false` hides a
-  product everywhere. `sort_order` controls display order.
+  product everywhere. `sort_order` controls display order. There is no category
+  column: snack type ("Chips", "Nuts", "Other") is derived from the product
+  name by `snackTypeOf()` (`src/lib/data.ts`) and drives search, filters and
+  `GET /api/products`. If real categories are ever needed, add a `category`
+  column and read it there instead of deriving.
 - `profiles` — one row per auth user (trigger `handle_new_user` on signup);
   `welcome_email_status` records the one-time welcome email (server-written).
 - `carts` / `cart_items` — one cart per signed-in user, RLS-scoped to the owner.
@@ -176,6 +187,15 @@ Everything lives in `supabase/schema.sql` (single source of truth):
 items are owner-only; orders/order items are read-only to their owner; there
 is deliberately **no client-side insert policy on orders** — the server writes
 them with the service role after re-validating and re-pricing.
+
+**Public catalogue API (shared with the future mobile app):**
+`GET /api/products` is public and read-only. Optional params: `q` (free text
+over name/description/taste/weight/type), `sort` (`price-asc` | `price-desc`),
+`type` (derived snack type), `min`/`max` (naira price bounds). It returns
+`{ products, count, types }` where `types` lists the snack types that actually
+exist with counts, and it reuses the same `getCatalog()` as the shop page so
+the website and the mobile app always show identical results. It never exposes
+service-role data and does not touch carts, orders or auth.
 
 ## 9. Authentication rules
 
@@ -290,8 +310,9 @@ See `.env.example`. Required:
 ## 14. Testing requirements (before claiming anything works)
 
 1. `npm run build` passes (typecheck included).
-2. Flows: home → shop → product → add to cart → quantity ± → remove → empty
-   cart → checkout validation errors → successful order → confirmation page.
+2. Flows: home → shop (search + snack-type/price filters + sorting) → product →
+   add to cart → quantity ± → remove → empty cart → checkout validation errors →
+   successful order → confirmation page.
 3. Cart persistence: guest cart survives reload; signed-in cart round-trips
    through Supabase; guest cart merges on sign-in.
 4. Orders: row in `orders` + correct `order_items` and totals in Supabase;
@@ -310,7 +331,7 @@ See `.env.example`. Required:
    honest failure state; the webhook endpoint rejects bad signatures.
 8. Auth: sign-in, reload (session persists), sign-out, cancelled sign-in,
    protected-route redirect.
-9. Layout at 390px and 1440px; browser console free of errors.
+9. Layout at 390px, 768px (tablet) and 1440px; browser console free of errors.
 10. Confirm no secrets appear in the client bundle.
 
 ## 15. Deployment
@@ -324,7 +345,7 @@ See `.env.example`. Required:
 ## 16. Intentionally out of scope
 
 Do not add these without the owner asking: admin dashboard (products are managed in the
-Supabase dashboard), product search/filters (3 products), reviews/ratings,
+Supabase dashboard), reviews/ratings,
 wishlists, newsletters, separate About/Contact pages (homepage sections cover
 them), email/password auth (Google only), discount codes, order editing UI,
 invented products/claims/contacts.

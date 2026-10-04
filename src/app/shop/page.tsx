@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ProductCard } from "@/components/product-card";
 import { SetupNotice } from "@/components/setup-notice";
-import { getProducts } from "@/lib/data";
+import { ShopFilters, type ShopFilterValues } from "@/components/shop-filters";
+import { catalogQueryFromParams, getCatalog, getSnackTypes } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -9,8 +11,34 @@ export const metadata: Metadata = {
     "Shop Cnaz Foods snacks: crunchy plantain chips, roasted peanuts and seasoned groundnut.",
 };
 
-export default async function ShopPage() {
-  const { products, configured } = await getProducts();
+type ShopSearchParams = {
+  q?: string;
+  sort?: string;
+  type?: string;
+  min?: string;
+  max?: string;
+};
+
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams: ShopSearchParams;
+}) {
+  // One catalogue engine for the website and GET /api/products: the URL
+  // params are parsed and validated, then applied to real database data.
+  const query = catalogQueryFromParams(searchParams);
+  const [{ products, configured }, types] = await Promise.all([
+    getCatalog(query),
+    getSnackTypes(),
+  ]);
+
+  const values: ShopFilterValues = {
+    q: query.q ?? "",
+    sort: query.sort ?? "",
+    type: query.type ?? "",
+    min: typeof query.minPrice === "number" ? String(query.minPrice) : "",
+    max: typeof query.maxPrice === "number" ? String(query.maxPrice) : "",
+  };
 
   return (
     <div className="container-page py-10 sm:py-14">
@@ -22,20 +50,39 @@ export default async function ShopPage() {
           Crunchy plantain chips and freshly packed nuts from Cnaz Foods. Perfect for
           everyday snacking, sharing with friends, parties, or enjoying on the go.
         </p>
-        {configured && products.length > 0 ? (
-          <p className="mt-4 text-sm font-medium text-ink-500">
-            {products.length} product{products.length === 1 ? "" : "s"}
-          </p>
-        ) : null}
       </header>
+
+      {configured ? (
+        <ShopFilters
+          // Remount on every navigation so controls always reflect the URL.
+          key={`${values.q}|${values.sort}|${values.type}|${values.min}|${values.max}`}
+          types={types}
+          values={values}
+          resultCount={products.length}
+        />
+      ) : null}
 
       <div className="mt-8">
         {!configured ? (
           <SetupNotice />
         ) : products.length === 0 ? (
-          <p className="text-ink-600">
-            Our products are being added. Please check back soon.
-          </p>
+          types.length === 0 ? (
+            <p className="text-ink-600">
+              Our products are being added. Please check back soon.
+            </p>
+          ) : (
+            <div className="card mx-auto max-w-xl p-8 text-center" role="status">
+              <h2 className="font-display text-lg font-semibold text-ink-900">
+                No snacks match your search
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600">
+                Try a different snack name, snack type or price range.
+              </p>
+              <Link href="/shop" className="btn-primary mt-5">
+                Show all snacks
+              </Link>
+            </div>
+          )
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product, index) => (

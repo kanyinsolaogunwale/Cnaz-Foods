@@ -14,6 +14,16 @@ custom sending domain.
 
 - **Home, Shop, Product details** — product data is served from the Supabase
   `products` table (never hardcoded), so new products appear automatically.
+- **Search, filters & sorting** — the shop page (and the header/home search
+  fields) query real database data: free-text search, snack-type filter
+  (derived from actual product names, so only types that exist are offered),
+  price range, and low-to-high / high-to-low price sorting. Filters live in
+  the URL, so filtered views can be shared. On phones and tablets the filters
+  open in a bottom sheet; on desktop they sit in an inline bar.
+- **Public catalogue API** — `GET /api/products` exposes the same catalogue
+  (same params: `q`, `sort`, `type`, `min`, `max`; returns
+  `{ products, count, types }`) so the upcoming mobile app can reuse the
+  website's backend without duplicating logic.
 - **Cart** — works for guests (localStorage) and persists to Supabase for
   signed-in customers; guest carts are merged into the account on sign-in.
 - **Checkout** — validated delivery details, server-side re-pricing of every

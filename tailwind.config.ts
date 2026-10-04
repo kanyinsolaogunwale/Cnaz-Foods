@@ -70,9 +70,14 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(4px)" },
           "100%": { opacity: "1", transform: "none" },
         },
+        "slide-up": {
+          "0%": { opacity: "0.4", transform: "translateY(32px)" },
+          "100%": { opacity: "1", transform: "none" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.35s ease-out both",
+        "slide-up": "slide-up 0.25s ease-out both",
       },
     },
   },

@@ -90,7 +90,9 @@ export function CartView() {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-4 sm:justify-end">
+              {/* flex-wrap lets the stepper drop below the price on narrow
+                  phones instead of forcing the row (and the page) wider. */}
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:justify-end">
                 <QuantityStepper
                   value={line.quantity}
                   onChange={(next) => setQuantity(line.productId, next)}

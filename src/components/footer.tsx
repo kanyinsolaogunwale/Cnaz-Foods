@@ -18,8 +18,10 @@ const accountLinks = [
 export function Footer() {
   return (
     <footer className="mt-20 bg-ink-950 text-white">
-      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:py-16">
-        <div className="sm:col-span-2 lg:col-span-1">
+      {/* Tablet (md) and up: Shop, Account and Contact share one row beside
+          the brand block. Below md they stack for comfortable reading. */}
+      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8 lg:grid-cols-4 lg:gap-10 lg:py-16">
+        <div className="sm:col-span-2 md:col-span-1">
           <Image
             src="/images/logo-cn.png"
             alt="Cnaz Foods logo"

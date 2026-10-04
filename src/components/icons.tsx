@@ -2,11 +2,34 @@
 
 type IconProps = { className?: string };
 
+/** Shopping trolley (real cart icon used in the header, cart and checkout). */
 export function CartIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M6 7h12l-1.2 12.1a2 2 0 0 1-2 1.9H9.2a2 2 0 0 1-2-1.9L6 7Z" />
-      <path d="M9 10V6a3 3 0 0 1 6 0v4" />
+      <path d="M3 4h2.2l2.3 11.2a1.9 1.9 0 0 0 1.9 1.5h8.1a1.9 1.9 0 0 0 1.86-1.5L21 8H6" />
+      <circle cx="10" cy="20.2" r="1.5" />
+      <circle cx="18" cy="20.2" r="1.5" />
+    </svg>
+  );
+}
+
+export function SearchIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.4-4.4" />
+    </svg>
+  );
+}
+
+/** Two horizontal sliders, used for the "Filters" toggle. */
+export function FilterIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 7h8m6 0h2" />
+      <circle cx="15.5" cy="7" r="2.2" />
+      <path d="M4 17h4m8 0h4" />
+      <circle cx="10.5" cy="17" r="2.2" />
     </svg>
   );
 }
