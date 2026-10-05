@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_WEBSITE_URL": "http://10.69.82.178:3000"
+        "EXPO_PUBLIC_WEBSITE_URL": "https://cnaz-foods.vercel.app"
       }
     },
     "production": {
