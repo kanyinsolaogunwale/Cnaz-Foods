@@ -6,20 +6,24 @@
 import { Image } from "expo-image";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, ConfirmModal, EmptyState } from "@/components/ui";
 import { QuantityStepper } from "@/components/add-to-cart";
 import { useCart } from "@/context/cart-context";
 import { formatNaira, productImageUrl } from "@/lib/types";
 import { websiteUrl } from "@/lib/env";
 import { colors, fonts, radius, shadowSoft } from "@/lib/theme";
-import { Trash } from "reicon-react-native";
+import { Trash2 } from "reicon-react-native";
 
 export default function Cart() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { lines, ready, count, subtotal, setQuantity, removeLine, reload } = useCart();
+  // Item awaiting removal confirmation (destructive actions always confirm
+  // first, same rule as the website; a React dialog works on web AND native,
+  // unlike Alert.alert which react-native-web does not implement).
+  const [pendingRemove, setPendingRemove] = useState<{ id: string; name: string } | null>(null);
 
   // The website writes to the SAME cart rows: re-read them whenever this
   // screen comes into view, so items added on the site appear immediately.
@@ -28,18 +32,6 @@ export default function Cart() {
       reload();
     }, [reload]),
   );
-
-  function handleRemove(productId: string, name: string) {
-    // Destructive actions always confirm first (same rule as the website).
-    Alert.alert("Remove item", `Remove ${name} from your cart?`, [
-      { text: "Keep it", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => removeLine(productId),
-      },
-    ]);
-  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 6 }]}>
@@ -95,11 +87,11 @@ export default function Cart() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Remove ${line.name}`}
-                  onPress={() => handleRemove(line.productId, line.name)}
+                  onPress={() => setPendingRemove({ id: line.productId, name: line.name })}
                   style={styles.removeButton}
                   hitSlop={8}
                 >
-                  <Trash size={16} color={colors.ink[600]} />
+                  <Trash2 size={18} color={colors.ink[600]} />
                 </Pressable>
               </View>
             ))}
@@ -132,6 +124,21 @@ export default function Cart() {
           </View>
         </>
       )}
+
+      {/* Removal confirmation (web + native; Alert.alert has no web build). */}
+      <ConfirmModal
+        visible={pendingRemove !== null}
+        title="Remove this item?"
+        message={pendingRemove ? `Remove ${pendingRemove.name} from your cart?` : undefined}
+        confirmLabel="Remove"
+        cancelLabel="Keep it"
+        danger
+        onConfirm={() => {
+          if (pendingRemove) removeLine(pendingRemove.id);
+          setPendingRemove(null);
+        }}
+        onCancel={() => setPendingRemove(null)}
+      />
     </View>
   );
 }
