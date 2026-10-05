@@ -37,3 +37,12 @@ yarn-error.log*
 
 # freebuff workspace metadata
 .freebuff/
+
+.vercel
+.env*
+
+# dev / build logs
+*.log
+
+# keep the env template despite the .env* rule
+!.env.example

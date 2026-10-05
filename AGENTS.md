@@ -51,11 +51,13 @@ their explicit approval.**
   service-role client).
 - **Transactional email** — order confirmation, one-time welcome email,
   email-confirmed account deletion (link + receipt) and a sign-out notice.
-  Provider priority in `sendViaConfiguredProvider()`: **Mailgun** (needs a
-  domain — production) → **Gmail SMTP** (`nodemailer`, free, delivers to any
-  recipient via a Gmail app password — the no-domain option) → **Resend**
-  (plain fetch, test sender only reaches the Resend owner's inbox). All send
-  the same branded template; no other SDK than `nodemailer` for SMTP.
+  Provider priority in `sendViaConfiguredProvider()`: **Gmail SMTP**
+  (`nodemailer`, free, delivers to any recipient via a Gmail app password —
+  the configured sender) → **Resend** (plain fetch fallback). **No Mailgun
+  account exists**; the `MAILGUN_*` code path is dormant and must stay
+  inactive unless the owner explicitly signs up for Mailgun later. All
+  providers send the same branded template; no other SDK than `nodemailer`
+  for SMTP.
 - **Online payment** — Paystack (`src/lib/paystack.ts`, plain `fetch`, no SDK).
   The customer pays the **snack total** on Paystack's hosted page after the
   order is saved; **delivery is still confirmed by phone** (never charged
@@ -95,7 +97,7 @@ their explicit approval.**
     ├── context/                   # auth-context, cart-context (client state)
     └── lib/
         ├── env.ts                 # NEXT_PUBLIC_* values (safe for browser)
-        ├── env.server.ts          # service-role + Mailgun keys (SERVER ONLY)
+        ├── env.server.ts          # service-role + email provider keys (SERVER ONLY)
         ├── delete-token.server.ts # signed deletion-link tokens (SERVER ONLY)
         ├── supabase/              # client.ts (browser), server.ts (cookies), admin.ts (service role)
         ├── data.ts                # product queries + catalogue search/filters/sort (getCatalog)
@@ -230,15 +232,15 @@ service-role data and does not touch carts, orders or auth.
   user with the service role — profiles and carts cascade, **orders are
   kept** (`user_id` set to null by the FK) — then emails a final receipt.
 
-## 10. Email rules (Resend default, Mailgun for production)
+## 10. Email rules (Gmail SMTP active, Resend fallback)
 
-- Provider keys are server-side only (`MAILGUN_*` / `GMAIL_*` / `RESEND_*`
-  env vars; `src/lib/env.server.ts`).
-- Provider choice in `sendViaConfiguredProvider()`: **Mailgun if configured,
-  else Gmail SMTP, else Resend.** Gmail SMTP is the free path to reach any
-  customer inbox without a domain (Gmail app password, `nodemailer`); Mailgun
-  activates as soon as the business has a sending domain — no code changes,
-  just env vars.
+- Provider keys are server-side only (`GMAIL_*` / `RESEND_*` env vars;
+  `src/lib/env.server.ts`).
+- Provider choice in `sendViaConfiguredProvider()`: **Gmail SMTP if
+  configured (it is — the active sender), else Resend.** Gmail SMTP is the
+  free path to reach any customer inbox without a domain (Gmail app
+  password, `nodemailer`). The dormant `MAILGUN_*` code path only activates
+  if the owner ever signs up for Mailgun — do not rely on or advertise it.
 - The email is sent **after** the order + items are saved. If the provider
   fails, `orders.email_status` becomes `failed` and the confirmation page
   tells the customer to keep their order number. **The order is never
@@ -287,8 +289,8 @@ order intact and explain themselves on the confirmation page. Payment is
 
 ## 12. Security requirements
 
-- Never expose the Supabase service role key or Mailgun API key to the client.
-  They exist only in `env.server.ts` / `supabase/admin.ts`, read from env vars.
+- Never expose the Supabase service role key or email provider keys to the
+  client. They exist only in `env.server.ts` / `supabase/admin.ts`, read from env vars.
 - `.env*` files are git-ignored — never commit secrets or paste them into code.
 - Never trust client prices/quantities: `createOrder` re-reads products from
   the DB and computes totals server-side.
@@ -302,9 +304,8 @@ See `.env.example`. Required:
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase data + Google auth |
 | `SUPABASE_SERVICE_ROLE_KEY` | server-side order writes + order lookup (server only) |
-| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` / `MAILGUN_FROM` | emails — takes priority when configured (production) |
-| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | emails via Gmail SMTP — free, any recipient, no domain (used before Resend) |
-| `RESEND_API_KEY` / `RESEND_FROM` | email fallback — test sender reaches only the Resend owner's inbox |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | emails via Gmail SMTP — free, any recipient, no domain (the configured sender) |
+| `RESEND_API_KEY` / `RESEND_FROM` | email fallback — used only when Gmail SMTP is not configured |
 | `PAYSTACK_SECRET_KEY` | online payment (Paystack). `sk_test_…` now, `sk_live_…` later; payment UI hides when empty |
 | `NEXT_PUBLIC_SITE_URL` | auth redirects + links inside emails |
 | `NEXT_PUBLIC_CONTACT_PHONE` / `NEXT_PUBLIC_CONTACT_EMAIL` | real business contact details (optional; hidden when empty) |
@@ -352,12 +353,41 @@ wishlists, newsletters, separate About/Contact pages (homepage sections cover
 them), email/password auth (Google only), discount codes, order editing UI,
 invented products/claims/contacts.
 
-## 17. Instructions for future AI agents
+## 17. Mobile app (`mobile/`)
+
+The Cnaz Foods mobile app is a real React Native (Expo SDK 57) application in
+`mobile/` with its own `package.json`, `tsconfig.json` and git-ignored
+`.env.local`. Full docs: [`mobile/README.md`](mobile/README.md).
+
+Rules for working on it:
+
+- **One backend.** The app shares the website's Supabase project and APIs. Do
+  not add a second database, auth system or mobile-only cart. Catalogue comes
+  from `GET /api/products`; orders from `POST /api/orders` (Bearer auth);
+  everything else straight through Supabase with RLS.
+- **Website changes must stay additive.** The four mobile-consumed routes
+  accept Bearer tokens (`src/lib/supabase/bearer.ts`) or are new public
+  endpoints (`/api/mobile/config`, `?slug=` on the catalogue, CORS headers).
+  Never break the website's cookie flows when touching them.
+- **Cart parity.** `mobile/src/context/cart-context.tsx` mirrors the website's
+  cart logic exactly (merge on sign-in, cap 99, write-through, guest cart in
+  AsyncStorage). Changes to cart behaviour must land on BOTH sides.
+- **Secrets stay server-side.** The app only ever holds the public Supabase
+  URL + anon key. Never copy service-role/mail/Paystack credentials into the
+  app or its env files.
+- **Verify** with `cd mobile && npx tsc --noEmit` and the backend smoke test
+  (`node scripts/smoke-test.js`, needs the website dev server running). Test
+  emails go only to the owner's plus-addressed inbox (§10).
+- Expo moves fast: check the installed SDK version in `mobile/package.json`
+  and the versioned Expo docs before using Expo APIs.
+
+## 18. Instructions for future AI agents
 
 - Read this file and `README.md` first; inspect existing code before editing.
 - Make focused changes; don't redesign working pages or restyle the design
   system without a reason.
 - Keep business facts exactly as given in §2; when info is missing, leave a
   clearly-marked gap instead of inventing content.
-- Verify with `npm run build` and manual flow testing before saying "done".
+- Verify with `npm run build` (website) and `npx tsc --noEmit` (mobile) plus
+  manual flow testing before saying "done".
 - Never commit secrets, never push or deploy without explicit approval.

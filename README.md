@@ -1,13 +1,23 @@
-# Cnaz Foods — Online Shop
+# Cnaz Foods — Online Shop + Mobile App
 
 **Cnaz Foods** sells packaged snacks — crunchy plantain chips, peanuts and
 groundnut. _“Quick bite, endless delight.”_
 
-This repository contains the complete shop web application built for the HNG 15
-individual task: a product catalogue, cart, checkout, order persistence in
-Supabase, Google sign-in, and branded transactional emails (order
-confirmation, one-time welcome, email-confirmed account deletion and a
-sign-out notice) sent today through Gmail SMTP.
+This repository contains the complete shop built for the HNG 15 individual
+task: the **website** (this Next.js app) and the **mobile app** (React Native
++ Expo, in [`mobile/`](mobile/README.md)) sharing ONE backend — the same
+Supabase project, the same `auth.users` accounts, the same carts and the same
+order/checkout pipeline.
+
+The website: a product catalogue, cart, checkout, order persistence in
+Supabase, Google + email/password sign-in, and branded transactional emails
+(order confirmation, one-time welcome, email-confirmed account deletion and a
+sign-out notice) sent through Gmail SMTP, with Resend as fallback. The mobile
+app: splash, onboarding, sign-in/sign-up (email/password + Google), Home ·
+Menu · Cart · Account navigation, search and filters over the live catalogue,
+shared cart synchronisation, checkout through the same `/api/orders`
+endpoint, order confirmation and order history. Setup and the physical-phone
+test guide live in [`mobile/README.md`](mobile/README.md).
 
 ## Features
 
@@ -20,9 +30,15 @@ sign-out notice) sent today through Gmail SMTP.
   be shared. On phones and tablets the filters open in a bottom sheet; on
   desktop they open in a dropdown panel beside the search field.
 - **Public catalogue API** — `GET /api/products` exposes the same catalogue
-  (same params: `q`, `sort`, `type`, `min`, `max`; returns
-  `{ products, count, types }`) so the upcoming mobile app can reuse the
-  website's backend without duplicating logic.
+  (same params: `q`, `sort`, `type`, `min`, `max`, plus `slug` for the mobile
+  product-details screen; returns `{ products, count, types }`) so the mobile
+  app reuses the website's backend without duplicating logic.
+- **Mobile app** — lives in `mobile/` (own package.json; the website is
+  untouched apart from additive API changes listed in the mobile README).
+  Auth, catalogue, cart and orders are the website's own backend: the app
+  calls `GET /api/products`, `GET /api/mobile/config` and `POST /api/orders`
+  (with Bearer auth), and reads/writes the same `carts`/`cart_items`/
+  `orders` tables through Supabase RLS.
 - **Cart** — works for guests (localStorage) and persists to Supabase for
   signed-in customers; guest carts are merged into the account on sign-in.
 - **Checkout** — validated delivery details, server-side re-pricing of every
@@ -55,8 +71,8 @@ sign-out notice) sent today through Gmail SMTP.
 - [Next.js 14](https://nextjs.org) (App Router) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com)
 - [Supabase](https://supabase.com) — Postgres, Row Level Security, Google OAuth
-- Transactional email — Gmail SMTP (free, any inbox), with Mailgun support
-  ready for a custom sending domain
+- Transactional email — Gmail SMTP (free, delivers to any inbox), with
+  Resend as fallback
 
 ## Run it locally
 
@@ -74,6 +90,20 @@ cp .env.example .env.local   # fill in real values
 npm run dev                  # http://localhost:3000
 ```
 
+### Run the mobile app
+
+The mobile app has its own dependencies and env file — see
+[`mobile/README.md`](mobile/README.md) for the full guide. In short:
+
+```bash
+cd mobile
+npm install
+npx expo start               # scan the QR with Expo Go on your phone
+```
+
+Point `mobile/.env.local` → `EXPO_PUBLIC_WEBSITE_URL` at this server (your
+computer's LAN IP for a physical phone) so the app talks to the same backend.
+
 ## Environment variables
 
 Copy `.env.example` to `.env.local` and fill in:
@@ -84,10 +114,7 @@ Copy `.env.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API (**server only**) |
 | `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM` | Gmail SMTP sending (**the active provider**): a Gmail app password from myaccount.google.com → Security |
-| `MAILGUN_API_KEY` | optional: activates Mailgun when the business has a sending domain (planned production upgrade) |
-| `MAILGUN_DOMAIN` | optional: e.g. `mg.cnazfoods.com` |
-| `MAILGUN_FROM` | optional; defaults to `Cnaz Foods <postmaster@YOUR_DOMAIN>` |
-| `RESEND_API_KEY` / `RESEND_FROM` | optional last-resort fallback kept in the code; not needed while Gmail SMTP is configured |
+| `RESEND_API_KEY` / `RESEND_FROM` | resend.com → API keys (fallback provider; used only when Gmail SMTP is not configured) |
 | `PAYSTACK_SECRET_KEY` | paystack.com → Settings → API Keys & Webhooks (`sk_test_…` for testing) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally; production URL in deploy |
 | `NEXT_PUBLIC_CONTACT_PHONE` | real business phone (shown on the site when set) |
@@ -123,31 +150,21 @@ Never commit `.env.local` — it is git-ignored.
    Authentication → Providers → Google → enable → paste → Save.
 5. Supabase → Authentication → URL Configuration:
    - Site URL: your production URL (locally `http://localhost:3000`).
-   - Redirect URLs: `http://localhost:3000/**` and your production URL.
-
-## Mailgun configuration
-
-1. Create a [Mailgun](https://signup.mailgun.com) account and add a sending
-   domain (or use the sandbox domain for testing).
-2. For a custom domain, add the DNS records Mailgun shows (SPF, DKIM, DMARC).
-3. Sandbox domains can only send to **Authorized Recipients** — add your test
-   email there.
-4. Copy the private API key and domain into `.env.local`
-   (`MAILGUN_API_KEY`, `MAILGUN_DOMAIN`).
+   - Redirect URLs: `http://localhost:3000/**`, your production URL, and —
+     for the mobile app — `cnazfoods://**`, `exp://**` and
+     `http://localhost:8081/**` (see [`mobile/README.md`](mobile/README.md)).
 
 The confirmation email is sent from the server (`/api/orders` →
 `src/lib/mailgun.ts`) after the order is saved. A one-time **welcome email**
 is sent from `/auth/callback` after the customer's first Google sign-in, and
 account emails (deletion link, deletion receipt, sign-out notice) are sent
 from their API routes — all through the same provider priority:
-**Gmail SMTP (active today), then Mailgun, then Resend**. Gmail SMTP uses a
-Gmail app password: free, delivers to any inbox, no domain needed. When the
-business later adds a sending domain, filling in the `MAILGUN_*` variables
-automatically switches to Mailgun with no code changes. If sending fails,
-the order is kept, `email_status` is set to `failed`, and the confirmation
-page asks the customer to keep their order number. **Only genuine business
-emails are ever sent** (first sign-in, real orders, account deletion,
-sign-out); tests go to the owner's inbox only.
+**Gmail SMTP first (the configured sender today), then Resend**. Gmail SMTP
+uses a Gmail app password: free, delivers to any inbox, no domain needed. If
+sending fails, the order is kept, `email_status` is set to `failed`, and the
+confirmation page asks the customer to keep their order number. **Only
+genuine business emails are ever sent** (first sign-in, real orders, account
+deletion, sign-out); tests go to the owner's inbox only.
 
 ## Paystack configuration
 
@@ -177,7 +194,7 @@ The app is designed for [Vercel](https://vercel.com):
 
 ## Security notes
 
-- The Supabase service role key and Mailgun API key are used **server-side
+- The Supabase service role key and email provider keys are used **server-side
   only** (`src/lib/env.server.ts`, `src/lib/supabase/admin.ts`) and are never
   sent to the browser.
 - Orders are created by the server, which re-validates all input and re-prices
