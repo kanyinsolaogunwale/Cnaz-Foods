@@ -18,11 +18,14 @@ const accountLinks = [
 export function Footer() {
   return (
     <footer className="mt-20 bg-ink-950 text-white">
-      {/* Tablet (md) and up: Shop, Account and Contact share one row beside
-          the brand block, all four columns equal so the spacing between them
-          is even. Below md they stack for comfortable reading. */}
-      <div className="container-page grid gap-10 py-12 sm:grid-cols-2 md:grid-cols-4 lg:py-16">
-        <div className="sm:col-span-2 md:col-span-1">
+      {/* Tablet (md) and up: the brand overview, Shop, Account and Contact
+          sit on one row and justify-between spreads the leftover space
+          equally BETWEEN the blocks, so the visual gap from the overview to
+          Shop matches the gaps between the link columns no matter how wide
+          each column's text is. Below md: two columns on small tablets,
+          stacked on phones. */}
+      <div className="container-page flex flex-col gap-10 py-12 sm:grid sm:grid-cols-2 md:flex md:flex-row md:justify-between md:gap-10 lg:py-16">
+        <div className="max-w-xs md:w-56 md:max-w-none lg:w-64">
           <Image
             src="/images/logo-cn.png"
             alt="Cnaz Foods logo"
