@@ -1,0 +1,18 @@
+# dependencies / builds (both products)
+node_modules/
+.next/
+.next-dev.log
+expo/out/
+.expo/
+
+# environment (real values only; keep templates tracked)
+.env
+.env.*
+!.env.example
+
+# vercel + tooling metadata
+.vercel/
+.freebuff/
+
+# logs
+*.log

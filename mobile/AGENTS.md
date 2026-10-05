@@ -39,3 +39,18 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Git: pushing mobile changes (owner's instruction)
+
+- The mobile app lives in `mobile/` **inside the same repository** as the
+  website (branch `main`). Commit mobile changes with the `mobile:` prefix
+  (website commits use `web:`) so history stays unambiguous.
+- Always commit from the repository root and stage only files under
+  `mobile/` plus this playbook — never `git add -A`, and never touch
+  `website/` files.
+- After committing, run `git push origin main`. The Vercel project's Root
+  Directory is `website/`, so mobile-only pushes will not affect the
+  production website.
+- Never deploy the mobile app without the owner's explicit approval; use
+  `eas build` / `eas submit` (or Expo Go for development) per the EAS
+  section above.
