@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Cnaz Foods",
+    "slug": "cnaz-foods",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "cnazfoods",
+    "backgroundColor": "#FBF9F4",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF9F4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cnazfoods.app"
+    },
+    "android": {
+      "package": "com.cnazfoods.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      [
+        "expo-web-browser",
+        {
+          "experimentalLauncherActivity": true
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b4704dac-48fd-48ad-904b-a85eea4bd256"
+      }
+    },
+    "owner": "naylo"
+  }
+}

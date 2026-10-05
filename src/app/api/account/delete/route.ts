@@ -1,11 +1,33 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseClientFromAuthHeader } from "@/lib/supabase/bearer";
 import { sendDeleteConfirmationEmail } from "@/lib/mailgun";
 import { createDeleteToken, DELETE_LINK_TTL_MINUTES } from "@/lib/delete-token.server";
 import { site } from "@/lib/site";
+import { CORS_HEADERS, corsPreflight } from "@/lib/cors";
 
 export const runtime = "nodejs";
+
+export async function OPTIONS() {
+  return corsPreflight();
+}
+
+/**
+ * Resolve the caller's identity: website session cookies, or the Cnaz Foods
+ * mobile app's `Authorization: Bearer <access token>` header (same project,
+ * same accounts).
+ */
+async function resolveUser(request: Request) {
+  const bearer = createSupabaseClientFromAuthHeader(request.headers.get("authorization"));
+  if (bearer) {
+    const { data } = await bearer.auth.getUser();
+    return data.user ?? null;
+  }
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+  return (await supabase.auth.getUser()).data.user;
+}
 
 // Soft in-memory cooldown so a stuck button (or a script) cannot flood an
 // inbox with deletion links. Serverless instances are short-lived, so this
@@ -21,28 +43,27 @@ const lastRequestAt = new Map<string, number>();
  * only when that link is opened and confirmed, so a stray click in the app
  * can never remove an account on its own.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
-    return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503 });
+    return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503, headers: CORS_HEADERS });
   }
 
-  const { data, error: userError } = await supabase.auth.getUser();
-  const user = data?.user;
-  if (userError || !user) {
-    return NextResponse.json({ error: "You need to be signed in to do that." }, { status: 401 });
+  const user = await resolveUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "You need to be signed in to do that." }, { status: 401, headers: CORS_HEADERS });
   }
 
   const admin = getSupabaseAdminClient();
   if (!admin) {
-    return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503 });
+    return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503, headers: CORS_HEADERS });
   }
 
   const email = user.email ?? "";
   if (!email) {
     return NextResponse.json(
       { error: "Your account has no email address we can send the link to." },
-      { status: 400 },
+      { status: 400, headers: CORS_HEADERS },
     );
   }
 
@@ -50,7 +71,7 @@ export async function POST() {
   if (last && Date.now() - last < COOLDOWN_MS) {
     return NextResponse.json(
       { error: "A deletion link was just sent. Please check your inbox." },
-      { status: 429 },
+      { status: 429, headers: CORS_HEADERS },
     );
   }
 
@@ -70,7 +91,7 @@ export async function POST() {
     console.error(`[cnaz] Delete-confirmation email ${status} for ${email}`);
     return NextResponse.json(
       { error: "We couldn't send the confirmation email right now. Please try again in a moment." },
-      { status: 502 },
+      { status: 502, headers: CORS_HEADERS },
     );
   }
 
@@ -78,5 +99,5 @@ export async function POST() {
   // retried straight away.
   lastRequestAt.set(user.id, Date.now());
 
-  return NextResponse.json({ ok: true, email, expiresInMinutes: DELETE_LINK_TTL_MINUTES });
+  return NextResponse.json({ ok: true, email, expiresInMinutes: DELETE_LINK_TTL_MINUTES }, { headers: CORS_HEADERS });
 }

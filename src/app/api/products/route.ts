@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
+import { CORS_HEADERS, corsPreflight } from "@/lib/cors";
 import { catalogQueryFromParams, getCatalog, getSnackTypes } from "@/lib/data";
+
+export async function OPTIONS() {
+  return corsPreflight();
+}
 
 export const runtime = "nodejs";
 
@@ -19,11 +24,27 @@ export const runtime = "nodejs";
  *         (options come from the `types` array in this response)
  *   min   minimum price in naira
  *   max   maximum price in naira
+ *   slug  exact product slug — returns `{ product: Product | null }` instead
  *
  * Response: { products: Product[], count, types: { value, count }[] }
+ *           (or `{ product: Product | null }` when `slug` is given)
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
+
+  // Single-product lookup (mobile product details screen).
+  const slug = url.searchParams.get("slug")?.trim();
+  if (slug) {
+    const { products, configured } = await getCatalog({});
+    if (!configured) {
+      return NextResponse.json({ error: "The shop database is not connected yet." }, { status: 503 });
+    }
+    return NextResponse.json(
+      { product: products.find((p) => p.slug === slug) ?? null },
+      { headers: { ...CORS_HEADERS, "Cache-Control": "no-store" } },
+    );
+  }
+
   const query = catalogQueryFromParams({
     q: url.searchParams.get("q") ?? undefined,
     sort: url.searchParams.get("sort") ?? undefined,
@@ -43,6 +64,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     { products, count: products.length, types },
-    { headers: { "Cache-Control": "no-store" } },
+    { headers: { ...CORS_HEADERS, "Cache-Control": "no-store" } },
   );
 }

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GoogleIcon } from "@/components/google-icon";
 import { SetupNotice } from "@/components/setup-notice";
@@ -13,17 +14,71 @@ const ERROR_MESSAGES: Record<string, string> = {
   setup: "Sign-in isn't configured yet. Please add your Supabase and Google credentials first.",
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export function LoginPanel({
   error,
   next,
+  appRedirect,
   configured,
 }: {
   error?: string;
   next: string;
+  /** Present when the Cnaz Foods mobile app started this sign-in. */
+  appRedirect?: string | null;
   configured: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+
+  /** Email/password sign-in (accounts created in the Cnaz Foods mobile app). */
+  async function handleEmailSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    const trimmedEmail = email.trim();
+    if (!EMAIL_RE.test(trimmedEmail)) {
+      setLocalError("Please enter a valid email address.");
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError("Please enter your password (at least 6 characters).");
+      return;
+    }
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setLocalError("Sign-in isn't configured yet.");
+      return;
+    }
+    setBusy(true);
+    setLocalError(null);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password,
+    });
+    if (signInError) {
+      setLocalError(
+        signInError.message === "Invalid login credentials"
+          ? "That email and password don't match an account. Please try again."
+          : signInError.message === "Email not confirmed"
+            ? "Please confirm your email first (check your inbox for the link)."
+            : "We couldn't sign you in. Please try again.",
+      );
+      setBusy(false);
+      return;
+    }
+    // The client cart context picks up the new session, merges any guest cart,
+    // and persists it to Supabase. When the mobile app started this sign-in,
+    // hand the fresh session back to the app instead of browsing further.
+    if (appRedirect) {
+      router.push(`/auth/app-return?redirect=${encodeURIComponent(appRedirect)}`);
+      return;
+    }
+    router.push(next);
+    router.refresh();
+  }
 
   async function handleGoogleSignIn() {
     const supabase = getSupabaseBrowserClient();
@@ -34,7 +89,12 @@ export function LoginPanel({
     setBusy(true);
     setLocalError(null);
 
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    // Google lands back on /auth/callback; from there the customer continues
+    // to the app's return bridge (mobile sign-in) or the requested page.
+    const bridgeNext = appRedirect
+      ? `/auth/app-return?redirect=${encodeURIComponent(appRedirect)}`
+      : next;
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(bridgeNext)}`;
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -69,7 +129,7 @@ export function LoginPanel({
         Welcome to Cnaz Foods
       </h1>
       <p className="mt-2 text-[15px] leading-relaxed text-ink-600">
-        Sign in with Google to track your orders and keep your cart saved to your account.
+        Sign in to track your orders and keep your cart saved to your account.
       </p>
 
       {message ? (
@@ -92,9 +152,51 @@ export function LoginPanel({
         {busy ? "Redirecting to Google…" : "Continue with Google"}
       </button>
 
+      <div className="my-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-ink-500">
+        <span className="h-px flex-1 bg-ink-200" />
+        or with email
+        <span className="h-px flex-1 bg-ink-200" />
+      </div>
+
+      <form onSubmit={handleEmailSignIn} className="space-y-4">
+        <div>
+          <label htmlFor="login-email" className="label">
+            Email address
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            className="input"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <div>
+          <label htmlFor="login-password" className="label">
+            Password
+          </label>
+          <input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            className="input"
+            placeholder="Your password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <button type="submit" disabled={busy} className="btn-primary w-full">
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+
       <p className="mt-5 text-xs leading-relaxed text-ink-500">
-        We only use your Google name and email to manage your orders: nothing else, and
-        never anything posted on your behalf.
+        Accounts created in the Cnaz Foods mobile app sign in here with the same email and
+        password. We only use your name and email to manage your orders.
       </p>
 
       <div className="mt-6 border-t border-ink-200 pt-5">
