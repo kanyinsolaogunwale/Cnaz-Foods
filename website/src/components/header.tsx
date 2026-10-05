@@ -14,6 +14,11 @@ const navLinks = [
   { href: "/shop", label: "Shop" },
 ];
 
+// Desktop nav: the logo + wordmark next to it already link home, so the
+// "Home" text link is redundant there. It stays in the mobile menu, where
+// the icon-only logo row needs a labelled way back to the homepage.
+const desktopNavLinks = navLinks.filter((link) => link.href !== "/");
+
 function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
@@ -76,7 +81,7 @@ export function Header() {
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
+          {desktopNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
