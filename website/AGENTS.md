@@ -67,8 +67,13 @@ their explicit approval.**
 
 ## 4. Project structure
 
+The repository root holds `website/` (this app) and `mobile/` (the Expo app).
+Paths below are relative to `website/`. Run all website commands from
+`website/`. Root README.md documents the layout and the `web:` / `mobile:` /
+`docs:` / `repo:` commit prefixes.
+
 ```
-├── AGENTS.md / README.md          # you are here
+├── AGENTS.md / README.md          # you are here (website/)
 ├── .env.example                   # template for all env vars (copy → .env.local)
 ├── next.config.mjs                # incl. remotePatterns for Google avatars
 ├── tailwind.config.ts             # design tokens (brand, ink, cream, accent, gold)
